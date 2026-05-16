@@ -1,0 +1,164 @@
+{
+  "@@locale": "ko",
+
+  "appName": "여기봐용",
+  "@appName": { "description": "Application name" },
+
+  "next": "다음",
+  "@next": { "description": "Next button" },
+
+  "skip": "건너뛰기",
+  "@skip": { "description": "Skip button" },
+
+  "done": "완료",
+  "@done": { "description": "Done button" },
+
+  "allow": "허용하기",
+  "@allow": { "description": "Allow permission button" },
+
+  "allowed": "허용됨",
+  "@allowed": { "description": "Permission is granted" },
+
+  "notAllowed": "허용 안 됨",
+  "@notAllowed": { "description": "Permission is not granted" },
+
+  "requestPermission": "권한 요청",
+  "@requestPermission": { "description": "Re-request permission button" },
+
+  "goToSettings": "설정으로 이동",
+  "@goToSettings": { "description": "Open system settings button" },
+
+  "onboardingWelcomeTitle": "여기봐용에 오신 것을 환영해요!",
+  "@onboardingWelcomeTitle": { "description": "Onboarding welcome title" },
+
+  "onboardingWelcomeDesc": "앱 사용 시간이 초과되거나 타이머가 끝나면\n펫 캐릭터가 등장해 부드럽게 알려드려요.\n\n시작하기 전에 몇 가지 권한이 필요해요.",
+  "@onboardingWelcomeDesc": { "description": "Onboarding welcome description" },
+
+  "onboardingStart": "시작하기",
+  "@onboardingStart": { "description": "Start onboarding button" },
+
+  "permNotificationTitle": "알림 권한",
+  "@permNotificationTitle": { "description": "Notification permission step title" },
+
+  "permNotificationDesc": "타이머가 끝나거나 앱 사용 시간이 초과될 때\n알림으로 알려드려요.",
+  "@permNotificationDesc": { "description": "Notification permission description" },
+
+  "permOverlayTitle": "다른 앱 위에 표시",
+  "@permOverlayTitle": { "description": "Overlay permission step title" },
+
+  "permOverlayDesc": "펫 캐릭터를 다른 앱 위에 표시하려면\n이 권한이 필요해요.\n\n설정 화면에서 '여기봐용'을 찾아 허용해 주세요.",
+  "@permOverlayDesc": { "description": "Overlay permission description" },
+
+  "permUsageTitle": "앱 사용량 접근",
+  "@permUsageTitle": { "description": "Usage stats permission step title" },
+
+  "permUsageDesc": "어떤 앱을 얼마나 사용했는지 확인하기 위해\n이 권한이 필요해요.\n\n설정 화면에서 '여기봐용'을 찾아 허용해 주세요.",
+  "@permUsageDesc": { "description": "Usage stats permission description" },
+
+  "permBatteryTitle": "배터리 최적화 제외",
+  "@permBatteryTitle": { "description": "Battery optimization step title" },
+
+  "permBatteryDesc": "백그라운드에서도 계속 작동하려면\n배터리 최적화에서 제외해야 해요.\n\n이 권한을 허용하지 않으면 앱이 꺼진 후\n펫이 등장하지 않을 수 있어요.",
+  "@permBatteryDesc": { "description": "Battery optimization description" },
+
+  "permStepOf": "{current} / {total}",
+  "@permStepOf": {
+    "description": "Permission step indicator",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "settingsTitle": "설정",
+  "@settingsTitle": { "description": "Settings screen title" },
+
+  "settingsSectionNotification": "알림",
+  "@settingsSectionNotification": { "description": "Notification section header" },
+
+  "settingsNotification": "알림",
+  "@settingsNotification": { "description": "Notification toggle label" },
+
+  "settingsSound": "소리",
+  "@settingsSound": { "description": "Sound toggle label" },
+
+  "settingsVibration": "진동",
+  "@settingsVibration": { "description": "Vibration toggle label" },
+
+  "settingsSectionOverlay": "오버레이",
+  "@settingsSectionOverlay": { "description": "Overlay section header" },
+
+  "settingsOverlayDuration": "오버레이 표시 시간",
+  "@settingsOverlayDuration": { "description": "Overlay duration setting label" },
+
+  "settingsOverlayDurationValue": "{seconds}초",
+  "@settingsOverlayDurationValue": {
+    "description": "Overlay duration value label",
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+
+  "settingsSectionUsage": "앱 사용 감시",
+  "@settingsSectionUsage": { "description": "Usage tracking section header" },
+
+  "settingsUsageTracking": "사용량 추적",
+  "@settingsUsageTracking": { "description": "Usage tracking toggle label" },
+
+  "settingsUsageTrackingDesc": "UsageStats 권한 필요",
+  "@settingsUsageTrackingDesc": { "description": "Usage tracking description" },
+
+  "settingsSectionPermissions": "권한 상태",
+  "@settingsSectionPermissions": { "description": "Permission status section header" },
+
+  "settingsPermNotification": "알림",
+  "@settingsPermNotification": { "description": "Notification permission label in settings" },
+
+  "settingsPermOverlay": "다른 앱 위에 표시",
+  "@settingsPermOverlay": { "description": "Overlay permission label in settings" },
+
+  "settingsPermUsage": "앱 사용량 접근",
+  "@settingsPermUsage": { "description": "Usage stats permission label in settings" },
+
+  "settingsPermBattery": "배터리 최적화 제외",
+  "@settingsPermBattery": { "description": "Battery optimization label in settings" },
+
+  "permGuideWhyTitle": "왜 필요한가요?",
+  "@permGuideWhyTitle": { "description": "Permission guide why section title" },
+
+  "permGuideHowTitle": "허용 방법",
+  "@permGuideHowTitle": { "description": "Permission guide how-to section title" },
+
+  "overlayDurationPickerTitle": "오버레이 표시 시간",
+  "@overlayDurationPickerTitle": { "description": "Overlay duration picker dialog title" },
+
+  "oemAutostartTitle": "자동 시작 허용",
+  "@oemAutostartTitle": { "description": "OEM autostart onboarding step title" },
+
+  "oemAutostartDescSamsung": "삼성 기기에서는 '기기 관리' → '배터리' → '앱 전원 관리'에서 여기봐용을 '제한 없음'으로 설정해야 해요.\n\n아래 버튼을 누르면 해당 화면으로 이동해요.",
+  "@oemAutostartDescSamsung": { "description": "Samsung-specific autostart description" },
+
+  "oemAutostartDescXiaomi": "샤오미/Redmi 기기에서는 '보안' → '권한' → '자동 시작'에서 여기봐용을 활성화해야 해요.\n\n아래 버튼을 누르면 해당 화면으로 이동해요.",
+  "@oemAutostartDescXiaomi": { "description": "Xiaomi-specific autostart description" },
+
+  "oemAutostartButton": "자동 시작 설정 열기",
+  "@oemAutostartButton": { "description": "Open OEM autostart settings button" },
+
+  "settingsOemAutostart": "자동 시작 설정",
+  "@settingsOemAutostart": { "description": "OEM autostart settings tile label in settings screen" },
+
+  "settingsOemAutostartDesc": "백그라운드 서비스가 강제 종료되는 경우 설정하세요",
+  "@settingsOemAutostartDesc": { "description": "OEM autostart settings tile description" },
+
+  "settingsSectionAbout": "앱 정보",
+  "@settingsSectionAbout": { "description": "About section header in settings" },
+
+  "settingsVersion": "버전",
+  "@settingsVersion": { "description": "App version label in settings" },
+
+  "settingsPrivacyPolicy": "개인정보처리방침",
+  "@settingsPrivacyPolicy": { "description": "Privacy policy tile label" },
+
+  "settingsOpenSourceLicenses": "오픈소스 라이선스",
+  "@settingsOpenSourceLicenses": { "description": "Open-source licenses tile label" }
+}

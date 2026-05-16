@@ -1,0 +1,164 @@
+{
+  "@@locale": "en",
+
+  "appName": "Yeogi Bwayong",
+  "@appName": { "description": "Application name" },
+
+  "next": "Next",
+  "@next": { "description": "Next button" },
+
+  "skip": "Skip",
+  "@skip": { "description": "Skip button" },
+
+  "done": "Done",
+  "@done": { "description": "Done button" },
+
+  "allow": "Allow",
+  "@allow": { "description": "Allow permission button" },
+
+  "allowed": "Allowed",
+  "@allowed": { "description": "Permission is granted" },
+
+  "notAllowed": "Not Allowed",
+  "@notAllowed": { "description": "Permission is not granted" },
+
+  "requestPermission": "Request Permission",
+  "@requestPermission": { "description": "Re-request permission button" },
+
+  "goToSettings": "Go to Settings",
+  "@goToSettings": { "description": "Open system settings button" },
+
+  "onboardingWelcomeTitle": "Welcome to Yeogi Bwayong!",
+  "@onboardingWelcomeTitle": { "description": "Onboarding welcome title" },
+
+  "onboardingWelcomeDesc": "When your app usage limit is reached or a timer runs out,\na pet character gently appears to remind you.\n\nWe need a few permissions before we start.",
+  "@onboardingWelcomeDesc": { "description": "Onboarding welcome description" },
+
+  "onboardingStart": "Get Started",
+  "@onboardingStart": { "description": "Start onboarding button" },
+
+  "permNotificationTitle": "Notifications",
+  "@permNotificationTitle": { "description": "Notification permission step title" },
+
+  "permNotificationDesc": "We'll send you a notification when a timer finishes\nor when your app usage time is exceeded.",
+  "@permNotificationDesc": { "description": "Notification permission description" },
+
+  "permOverlayTitle": "Display Over Other Apps",
+  "@permOverlayTitle": { "description": "Overlay permission step title" },
+
+  "permOverlayDesc": "This permission lets the pet character appear on top of other apps.\n\nIn Settings, find 'Yeogi Bwayong' and enable it.",
+  "@permOverlayDesc": { "description": "Overlay permission description" },
+
+  "permUsageTitle": "App Usage Access",
+  "@permUsageTitle": { "description": "Usage stats permission step title" },
+
+  "permUsageDesc": "This permission lets us track how long you use specific apps.\n\nIn Settings, find 'Yeogi Bwayong' and enable it.",
+  "@permUsageDesc": { "description": "Usage stats permission description" },
+
+  "permBatteryTitle": "Battery Optimization",
+  "@permBatteryTitle": { "description": "Battery optimization step title" },
+
+  "permBatteryDesc": "To keep running in the background, we need to be excluded from battery optimization.\n\nWithout this, the pet may not appear after you leave the app.",
+  "@permBatteryDesc": { "description": "Battery optimization description" },
+
+  "permStepOf": "{current} / {total}",
+  "@permStepOf": {
+    "description": "Permission step indicator",
+    "placeholders": {
+      "current": { "type": "int" },
+      "total": { "type": "int" }
+    }
+  },
+
+  "settingsTitle": "Settings",
+  "@settingsTitle": { "description": "Settings screen title" },
+
+  "settingsSectionNotification": "Notifications",
+  "@settingsSectionNotification": { "description": "Notification section header" },
+
+  "settingsNotification": "Notifications",
+  "@settingsNotification": { "description": "Notification toggle label" },
+
+  "settingsSound": "Sound",
+  "@settingsSound": { "description": "Sound toggle label" },
+
+  "settingsVibration": "Vibration",
+  "@settingsVibration": { "description": "Vibration toggle label" },
+
+  "settingsSectionOverlay": "Overlay",
+  "@settingsSectionOverlay": { "description": "Overlay section header" },
+
+  "settingsOverlayDuration": "Overlay Display Duration",
+  "@settingsOverlayDuration": { "description": "Overlay duration setting label" },
+
+  "settingsOverlayDurationValue": "{seconds}s",
+  "@settingsOverlayDurationValue": {
+    "description": "Overlay duration value label",
+    "placeholders": {
+      "seconds": { "type": "int" }
+    }
+  },
+
+  "settingsSectionUsage": "App Usage Monitor",
+  "@settingsSectionUsage": { "description": "Usage tracking section header" },
+
+  "settingsUsageTracking": "Usage Tracking",
+  "@settingsUsageTracking": { "description": "Usage tracking toggle label" },
+
+  "settingsUsageTrackingDesc": "Requires App Usage Access permission",
+  "@settingsUsageTrackingDesc": { "description": "Usage tracking description" },
+
+  "settingsSectionPermissions": "Permission Status",
+  "@settingsSectionPermissions": { "description": "Permission status section header" },
+
+  "settingsPermNotification": "Notifications",
+  "@settingsPermNotification": { "description": "Notification permission label in settings" },
+
+  "settingsPermOverlay": "Display Over Other Apps",
+  "@settingsPermOverlay": { "description": "Overlay permission label in settings" },
+
+  "settingsPermUsage": "App Usage Access",
+  "@settingsPermUsage": { "description": "Usage stats permission label in settings" },
+
+  "settingsPermBattery": "Battery Optimization",
+  "@settingsPermBattery": { "description": "Battery optimization label in settings" },
+
+  "permGuideWhyTitle": "Why is this needed?",
+  "@permGuideWhyTitle": { "description": "Permission guide why section title" },
+
+  "permGuideHowTitle": "How to allow",
+  "@permGuideHowTitle": { "description": "Permission guide how-to section title" },
+
+  "overlayDurationPickerTitle": "Overlay Duration",
+  "@overlayDurationPickerTitle": { "description": "Overlay duration picker dialog title" },
+
+  "oemAutostartTitle": "Allow Auto-Start",
+  "@oemAutostartTitle": { "description": "OEM autostart onboarding step title" },
+
+  "oemAutostartDescSamsung": "On Samsung devices, go to Device Care → Battery → App Power Management and set Yeogi Bwayong to 'Unrestricted'.\n\nTap the button below to open that screen.",
+  "@oemAutostartDescSamsung": { "description": "Samsung-specific autostart description" },
+
+  "oemAutostartDescXiaomi": "On Xiaomi/Redmi devices, go to Security → Permissions → Autostart and enable Yeogi Bwayong.\n\nTap the button below to open that screen.",
+  "@oemAutostartDescXiaomi": { "description": "Xiaomi-specific autostart description" },
+
+  "oemAutostartButton": "Open Autostart Settings",
+  "@oemAutostartButton": { "description": "Open OEM autostart settings button" },
+
+  "settingsOemAutostart": "Autostart Settings",
+  "@settingsOemAutostart": { "description": "OEM autostart settings tile label in settings screen" },
+
+  "settingsOemAutostartDesc": "Configure if the background service keeps getting killed",
+  "@settingsOemAutostartDesc": { "description": "OEM autostart settings tile description" },
+
+  "settingsSectionAbout": "About",
+  "@settingsSectionAbout": { "description": "About section header in settings" },
+
+  "settingsVersion": "Version",
+  "@settingsVersion": { "description": "App version label in settings" },
+
+  "settingsPrivacyPolicy": "Privacy Policy",
+  "@settingsPrivacyPolicy": { "description": "Privacy policy tile label" },
+
+  "settingsOpenSourceLicenses": "Open-Source Licenses",
+  "@settingsOpenSourceLicenses": { "description": "Open-source licenses tile label" }
+}
