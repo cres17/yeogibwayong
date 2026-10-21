@@ -1,3 +1,5 @@
+<div align="center">
+
 # 여기봐용
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logoColor=white&logo=flutter)
@@ -13,6 +15,8 @@
 ![flutter_overlay_window](https://img.shields.io/badge/flutter__overlay__window-8A6420?style=flat&logoColor=white)
 ![fl_chart](https://img.shields.io/badge/fl__chart-0175C2?style=flat&logoColor=white)
 ![Google AdMob](https://img.shields.io/badge/Google%20AdMob-EA4335?style=flat&logoColor=white&logo=googleadmob)
+
+</div>
 
 내 반려동물 사진이 휴대폰 화면 위에 나타나 "그만 보고 여기 봐"라고 알려 주는 스크린 타임 관리 앱입니다. 다른 앱을 강제로 막는 대신, 사용자가 정한 앱의 하루 사용 시간이 한도를 넘으면 반려동물 캐릭터가 다른 앱 위에 잠깐 떠오릅니다. 반려동물과 함께하는 집중 타이머와 앱별 사용 통계도 제공합니다. Android 전용이며 한국어 · 영어를 지원합니다.
 
