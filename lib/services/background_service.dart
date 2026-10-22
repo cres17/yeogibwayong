@@ -60,7 +60,15 @@ Future<void> onServiceStart(ServiceInstance service) async {
   // _BgState carries mutable state across ticks without globals.
   final state = _BgState();
   pollingTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
-    await _checkUsage(service, db, state);
+    // A slow tick (UsageStats query, DB) must not overlap the next one,
+    // otherwise both pass the cooldown check and show duplicate overlays.
+    if (state.checking) return;
+    state.checking = true;
+    try {
+      await _checkUsage(service, db, state);
+    } finally {
+      state.checking = false;
+    }
   });
 }
 
@@ -90,6 +98,9 @@ Future<void> _showForegroundNotification() async {
 
 // Mutable state shared across polling ticks within Isolate 2.
 class _BgState {
+  // True while a polling tick is running.
+  bool checking = false;
+
   // packageName → last overlay-shown time (in-isolate cooldown)
   final Map<String, DateTime> lastShown = {};
   static const cooldownMinutes = 10;
@@ -117,6 +128,9 @@ Future<void> _checkUsage(
     if (!await tracker.hasPermission()) return;
 
     final prefs = await SharedPreferences.getInstance();
+    // SharedPreferences caches values per isolate. Settings changed in the
+    // main isolate are only visible here after reloading from the platform.
+    await prefs.reload();
     if (prefs.getBool(PrefKeys.usageTrackingEnabled) != true) return;
 
     final dailyResetHour = prefs.getInt(PrefKeys.dailyResetHour) ?? 0;

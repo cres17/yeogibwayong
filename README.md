@@ -60,7 +60,7 @@ android/.../MainActivity.kt   제조사 자동 실행 설정 화면을 여는 Me
 
 ### SQLite (sqflite) · SharedPreferences
 
-`data/database/database_service.dart`가 `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 다섯 테이블을 만듭니다. 사용 기록은 `(package_name, date_string)` 유니크 키로 하루 한 행씩 갱신합니다. 사용량 추적 여부 · 오버레이 표시 시간 같은 설정은 SharedPreferences에 두어 백그라운드 isolate에서도 바로 읽습니다.
+`data/database/database_service.dart`가 `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 다섯 테이블을 만듭니다. 사용 기록은 `(package_name, date_string)` 유니크 키로 하루 한 행씩 갱신합니다. 사용량 추적 여부 · 오버레이 표시 시간 같은 설정은 SharedPreferences에 두고, 백그라운드 isolate는 매 검사마다 `reload()`로 다시 읽어 앱에서 바꾼 설정을 서비스 재시작 없이 반영합니다.
 
 ### UsageStats API
 
