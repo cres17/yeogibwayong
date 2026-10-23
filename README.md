@@ -48,44 +48,52 @@ lib/
 android/.../MainActivity.kt   제조사 자동 실행 설정 화면을 여는 MethodChannel
 ```
 
-## 각 기술 설명
+## 핵심 설계 결정
 
-### Flutter · Provider
+| 결정 | 방식 | 위치 |
+|------|------|------|
+| 앱이 꺼져도 감시 | Android foreground service가 상시 알림을 띄운 채 5초마다 사용량을 조회 · 저장하고 한도를 검사합니다. 한 번의 검사에서는 오버레이를 하나만 띄우고, 검사가 겹치지 않도록 진행 중 표시를 둡니다. | `lib/services/background_service.dart` |
+| 설정 변경을 재시작 없이 반영 | 백그라운드 isolate는 SharedPreferences 값을 캐시하므로 매 검사마다 `reload()`로 다시 읽습니다. 앱에서 바꾼 설정이 서비스 재시작 없이 적용됩니다. | `background_service.dart` |
+| 알림 폭주 방지 | 같은 앱의 오버레이는 10분(`cooldownMinutes`) 간격으로만 띄우고, 띄운 기록은 `popup_history`에 남깁니다. | `background_service.dart` |
+| 제조사 배터리 정책 대응 | WorkManager가 15분마다 서비스를 다시 시작하고, 삼성 · 샤오미 기기에서는 자동 실행 · 배터리 예외 설정 화면을 `MethodChannel`로 열어 사용자가 직접 풀 수 있게 안내합니다. | `lib/main.dart`, `android/.../MainActivity.kt` |
+| 타이머 시간이 어긋나지 않게 | 종료 시각을 저장해 두고 1초마다 남은 시간을 다시 계산하므로 일시정지 · 재개 후에도 오차가 쌓이지 않습니다. | `lib/providers/` |
+| 하루 한 행으로 사용 기록 관리 | `usage_log_daily`는 `(package_name, date_string)` 유니크 키로 하루 한 행씩 갱신합니다. | `lib/data/database/database_service.dart` |
 
-`lib/providers`의 `ChangeNotifier`들이 타이머 · 반려동물 · 사용량 · 설정 상태를 나눠 관리합니다. 타이머는 종료 시각을 저장해 두고 1초마다 남은 시간을 다시 계산하므로, 일시정지 · 재개 후에도 시간이 어긋나지 않습니다. 홈의 반려동물은 `sensors_plus`의 가속도 센서 값으로 기울기에 따라 움직입니다.
+## 필요 권한
 
-### SQLite (sqflite) · SharedPreferences
+앱 안의 권한 안내 화면이 시스템 설정으로 이동시킵니다.
 
-`data/database/database_service.dart`가 `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 다섯 테이블을 만듭니다. 사용 기록은 `(package_name, date_string)` 유니크 키로 하루 한 행씩 갱신합니다. 사용량 추적 여부 · 오버레이 표시 시간 같은 설정은 SharedPreferences에 두고, 백그라운드 isolate는 매 검사마다 `reload()`로 다시 읽어 앱에서 바꾼 설정을 서비스 재시작 없이 반영합니다.
+| 권한 | 용도 |
+|------|------|
+| 사용 기록 접근 (`PACKAGE_USAGE_STATS`) | `UsageStatsManager`로 오늘 앱별 포그라운드 시간 조회 |
+| 다른 앱 위에 표시 (`SYSTEM_ALERT_WINDOW`) | 한도를 넘었을 때 반려동물 오버레이 표시 |
+| 알림 (`POST_NOTIFICATIONS`) | 서비스 상시 알림과 로컬 알림 |
+| 배터리 최적화 제외 (`REQUEST_IGNORE_BATTERY_OPTIMIZATIONS`) | 백그라운드 서비스가 중단되지 않도록 요청 |
 
-### UsageStats API
+## 실행
 
-`usage_stats` 패키지로 Android `UsageStatsManager`의 오늘 앱별 포그라운드 시간을 읽습니다. 사용 기록 접근 권한이 필요하며, 권한 안내 화면에서 시스템 설정으로 이동시킵니다. 감시할 앱 목록은 `device_apps`로 설치된 앱을 불러와 고릅니다.
+Android 전용 프로젝트입니다. Dart SDK `^3.11.5`가 필요합니다.
 
-### flutter_background_service
+```bash
+flutter pub get
+flutter run                      # Android 기기
+flutter analyze
+```
 
-앱이 꺼져 있어도 동작하는 Android foreground service입니다. 상시 알림을 띄운 채 5초마다 사용량을 조회 · 저장하고 한도를 검사합니다. 한 번의 검사에서는 오버레이를 하나만 띄워 겹치지 않게 합니다.
+릴리스 빌드에서 AdMob 배너 단위를 지정하려면 `--dart-define`을 씁니다. 값이 없으면 Google 테스트 광고 ID를 씁니다.
 
-### flutter_overlay_window
+```bash
+flutter build apk --dart-define=ADMOB_BANNER_ID=ca-app-pub-XXXX/YYYY
+```
 
-다른 앱 위에 표시 권한을 받아, 등록한 반려동물 사진을 화면 위에 정해진 시간 동안 띄웁니다. 오버레이는 `overlay/overlay_main.dart`의 별도 진입점에서 그려집니다.
+## 기술 구성
 
-### WorkManager
-
-`main.dart`에서 15분 주기 작업을 등록해, 시스템이 Background Service를 종료한 경우 다시 시작합니다.
-
-### Kotlin MethodChannel
-
-`MainActivity.kt`가 `com.cres.yeogibwayong/oem_settings` 채널로 기기 제조사를 알려 주고, 삼성 · 샤오미의 자동 실행 · 배터리 예외 설정 화면을 엽니다. 제조사별 백그라운드 제한을 사용자가 풀 수 있게 안내하는 용도입니다.
-
-### image_picker · image_cropper
-
-반려동물을 등록할 때 갤러리 사진을 고르고 정사각형으로 잘라 앱 저장소에 복사합니다. 경로는 `pets.image_path`에 저장됩니다.
-
-### fl_chart
-
-통계 화면에서 `usage_log_daily`를 일간 · 주간 막대 차트로 그립니다.
-
-### flutter_local_notifications · Google AdMob
-
-foreground service 상시 알림과 로컬 알림을 표시합니다. 광고는 `BannerAdWidget`이 `--dart-define=ADMOB_BANNER_ID`로 받은 배너 단위를 쓰고, 값이 없으면 Google 테스트 광고 ID를 씁니다.
+| 기술 | 용도 | 위치 |
+|------|------|------|
+| Flutter · Provider | `ChangeNotifier`로 타이머 · 반려동물 · 사용량 · 설정 상태를 분리. 홈의 반려동물은 `sensors_plus` 가속도 값에 따라 기울어짐 | `lib/providers/` |
+| SQLite (sqflite) | `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 다섯 테이블 | `lib/data/database/database_service.dart` |
+| UsageStats API | `usage_stats` 패키지로 오늘 앱별 포그라운드 시간을 읽고, 감시할 앱은 `device_apps`로 설치 목록에서 선택 | `lib/services/usage_tracking_service.dart` |
+| flutter_overlay_window | 등록한 반려동물 사진을 다른 앱 위에 정해진 시간 동안 표시. 오버레이는 별도 진입점에서 그림 | `lib/overlay/overlay_main.dart` |
+| image_picker · image_cropper | 갤러리 사진을 고르고 정사각형으로 잘라 앱 저장소에 복사, 경로는 `pets.image_path`에 저장 | `lib/screens/pet_management/pet_management_screen.dart` |
+| fl_chart | 통계 화면의 일간 · 주간 막대 차트(`usage_log_daily`) | `lib/screens/statistics/statistics_screen.dart` |
+| flutter_local_notifications · Google AdMob | 상시 알림과 로컬 알림. 배너는 `BannerAdWidget` | `lib/services/notification_service.dart`, `lib/widgets/banner_ad_widget.dart` |
