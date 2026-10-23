@@ -3,18 +3,14 @@
 # 여기봐용
 
 ![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logoColor=white&logo=flutter)
-![Dart](https://img.shields.io/badge/Dart-0175C2?style=flat&logoColor=white&logo=dart)
 ![Provider](https://img.shields.io/badge/Provider-355A85?style=flat&logoColor=white)
 ![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logoColor=white&logo=sqlite)
-![SharedPreferences](https://img.shields.io/badge/SharedPreferences-4D5868?style=flat&logoColor=white)
 ![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logoColor=white&logo=kotlin)
 ![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logoColor=black&logo=android)
 ![UsageStats API](https://img.shields.io/badge/UsageStats%20API-3DDC84?style=flat&logoColor=black)
 ![flutter_background_service](https://img.shields.io/badge/flutter__background__service-2F6B4F?style=flat&logoColor=white)
 ![WorkManager](https://img.shields.io/badge/WorkManager-4D5868?style=flat&logoColor=white)
 ![flutter_overlay_window](https://img.shields.io/badge/flutter__overlay__window-8A6420?style=flat&logoColor=white)
-![fl_chart](https://img.shields.io/badge/fl__chart-0175C2?style=flat&logoColor=white)
-![Google AdMob](https://img.shields.io/badge/Google%20AdMob-EA4335?style=flat&logoColor=white&logo=googleadmob)
 
 </div>
 
