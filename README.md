@@ -48,6 +48,122 @@ lib/
 android/.../MainActivity.kt   제조사 자동 실행 설정 화면을 여는 MethodChannel
 ```
 
+## 기능 흐름
+
+### 1. 사용 시간 감시와 반려동물 오버레이
+
+백그라운드 서비스가 5초마다 아래 순서로 검사합니다. 활성 반려동물 사진이 없으면 오버레이를 띄우지 않고, 표시 시간은 설정값을 3~30초로 제한합니다.
+
+```mermaid
+flowchart TD
+  T([5초마다 검사]) --> C{이전 검사<br/>진행 중?}
+  C -- 예 --> X([이번 검사 건너뜀])
+  C -- 아니오 --> P{사용 기록 권한 있고<br/>감시 켜짐?<br/>설정은 reload로 다시 읽음}
+  P -- 아니오 --> X
+  P -- 예 --> U[UsageStats로 오늘<br/>앱별 사용 시간 조회]
+  U --> D[(usage_log_daily<br/>앱·날짜별 1행 갱신)]
+  D --> E[앱 화면에 usageUpdate 이벤트] --> M[감시 중인 앱 목록 ·<br/>활성 반려동물 사진 확인]
+  M --> L{사용 시간 ≥ 하루 한도<br/>그리고 마지막 표시 후 10분 경과?}
+  L -- 아니오 --> N([다음 앱 확인])
+  L -- 예 --> O[반려동물 오버레이 표시<br/>3~30초 후 자동 닫힘]
+  O --> H[(popup_history 기록)] --> B([이번 검사 종료<br/>한 번에 하나만 표시])
+  classDef warn fill:#fff1dc,stroke:#e0a443
+  class O warn
+```
+
+### 2. 서비스가 꺼졌을 때 복구
+
+```mermaid
+sequenceDiagram
+  participant App as 앱
+  participant FS as 포그라운드 서비스
+  participant OS as Android
+  participant WM as WorkManager
+  App->>FS: 감시 서비스 시작 (상시 알림)
+  loop 5초마다
+    FS->>FS: 사용량 저장 · 한도 검사
+  end
+  OS--xFS: 배터리 정책으로 종료
+  loop 15분마다
+    WM->>WM: 감시 설정 켜짐 확인
+    WM->>FS: 서비스 다시 시작
+  end
+```
+
+### 3. 집중 타이머
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> idle
+  idle --> running: 시작
+  running --> paused: 일시정지
+  paused --> running: 재개
+  running --> completed: 남은 시간 0
+  completed --> idle: 완료 확인
+  running --> idle: 취소
+  paused --> idle: 취소
+```
+
+| 전환 | 처리 |
+|------|------|
+| 시작 · 재개 | 종료 시각을 `지금 + 남은 초`로 다시 정하고 1초마다 남은 시간을 종료 시각에서 계산 |
+| 일시정지 | 남은 초만 저장하고 종료 시각을 비움 |
+| 남은 시간 0 | `timer_sessions`에 완료 세션 저장, 활성 반려동물 오버레이 표시 |
+| 취소 | 중단(`was_interrupted = 1`)으로 세션 저장 |
+| 앱이 백그라운드로 감 | 종료 시각에 완료 알림을 예약하고, 다시 앞으로 오면 예약을 취소 |
+
+### 4. 반려동물 등록
+
+```mermaid
+flowchart LR
+  A[갤러리에서<br/>사진 선택] --> B[1:1 정사각형<br/>자르기] --> C[앱 저장소로<br/>복사] --> D[(pets 테이블<br/>image_path)]
+  D --> E[활성 반려동물로 지정<br/>is_active = 1] --> F[[한도 초과 · 타이머 완료 때<br/>오버레이에 표시]]
+```
+
+### 5. 저장 구조 (SQLite)
+
+다섯 테이블 사이에 외래 키 제약은 없고, `package_name`과 `pet_id` 값으로만 이어집니다.
+
+```mermaid
+erDiagram
+  pets ||--o{ popup_history : "pet_id"
+  monitored_apps ||--o{ usage_log_daily : "package_name"
+  monitored_apps ||--o{ popup_history : "package_name"
+  pets {
+    int id PK
+    text name
+    text image_path
+    int is_active
+  }
+  monitored_apps {
+    int id PK
+    text package_name UK
+    int daily_limit_seconds
+    int is_enabled
+  }
+  usage_log_daily {
+    int id PK
+    text package_name
+    text date_string
+    int duration_seconds
+  }
+  popup_history {
+    int id PK
+    text trigger_type
+    text package_name
+    int pet_id
+    text shown_at
+  }
+  timer_sessions {
+    int id PK
+    int duration_seconds
+    text started_at
+    text completed_at
+    int was_interrupted
+  }
+```
+
 ## 핵심 설계 결정
 
 | 결정 | 방식 | 위치 |
