@@ -1,3 +1,4 @@
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:integration_test/integration_test.dart';
@@ -14,19 +15,42 @@ import 'package:yeogibwayong/services/overlay_service.dart';
 @pragma('vm:entry-point')
 void overlayMain() => app.overlayMain();
 
+Future<void> waitFor(
+  WidgetTester tester,
+  bool Function() ready,
+  String label,
+) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 30));
+  while (!ready() && DateTime.now().isBefore(deadline)) {
+    await tester.pump(const Duration(milliseconds: 200));
+  }
+  if (!ready()) debugDumpApp();
+  expect(ready(), isTrue, reason: 'Timed out waiting for $label');
+}
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('launch, native app list, SQLite timer and pet overlay', (
     tester,
   ) async {
     await app.main();
-    await tester.pump(const Duration(seconds: 3));
+    await waitFor(
+      tester,
+      () =>
+          find.text('나중에 설정할게요').evaluate().isNotEmpty ||
+          find.byType(HomeScreen).evaluate().isNotEmpty,
+      'onboarding or home',
+    );
     final skip = find.text('나중에 설정할게요');
     if (skip.evaluate().isNotEmpty) {
       await tester.ensureVisible(skip);
       await tester.tap(skip);
-      await tester.pump(const Duration(seconds: 2));
     }
+    await waitFor(
+      tester,
+      () => find.byType(HomeScreen).evaluate().isNotEmpty,
+      'home',
+    );
     expect(find.byType(HomeScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
     final apps = await InstalledAppsService.getInstalledApplications();
@@ -46,6 +70,11 @@ void main() {
     await timer.cancel();
     expect(await db.query('active_timer'), isEmpty);
     expect((await db.query('timer_sessions')).last['was_interrupted'], 1);
+    await waitFor(
+      tester,
+      () => context.read<PetProvider>().activePet != null,
+      'default pet',
+    );
     final pet = context.read<PetProvider>().activePet!;
     expect(await OverlayService.instance.isPermissionGranted(), isTrue);
     await OverlayService.instance.show(
