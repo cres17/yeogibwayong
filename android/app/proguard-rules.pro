@@ -6,7 +6,7 @@
 -keep class id.flutter.flutter_background_service.** { *; }
 
 # flutter_overlay_window
--keep class com.example.flutter_overlay_window.** { *; }
+-keep class flutter.overlay.window.flutter_overlay_window.** { *; }
 
 # WorkManager (androidx.work)
 -keep class androidx.work.** { *; }
