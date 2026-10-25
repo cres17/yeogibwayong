@@ -70,7 +70,7 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 | 기술 | 용도 | 위치 |
 |------|------|------|
 | Flutter · Provider | `ChangeNotifier`로 타이머 · 반려동물 · 사용량 · 설정 상태를 분리. 홈의 반려동물은 `sensors_plus` 가속도 값에 따라 기울어짐 | `lib/providers/` |
-| SQLite (sqflite) | `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 여섯 테이블 | `lib/data/database/database_service.dart` |
+| SQLite (sqflite) | `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions`, `active_timer` 여섯 테이블 | `lib/data/database/database_service.dart` |
 | UsageStats API | `usage_stats` 패키지로 오늘 앱별 포그라운드 시간을 읽고, 감시할 앱은 Kotlin MethodChannel로 실행 가능한 앱 목록에서 선택 | `lib/services/usage_tracking_service.dart` |
 | flutter_overlay_window | 등록한 반려동물 사진을 다른 앱 위에 정해진 시간 동안 표시. 오버레이는 별도 진입점에서 그림 | `lib/overlay/overlay_main.dart` |
 | image_picker · image_cropper | 갤러리 사진을 고르고 정사각형으로 잘라 앱 저장소에 복사, 경로는 `pets.image_path`에 저장 | `lib/screens/pet_management/pet_management_screen.dart` |
