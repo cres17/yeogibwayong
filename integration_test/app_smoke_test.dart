@@ -10,6 +10,10 @@ import 'package:yeogibwayong/screens/home/home_screen.dart';
 import 'package:yeogibwayong/services/installed_apps_service.dart';
 import 'package:yeogibwayong/services/overlay_service.dart';
 
+// Overlay engines look up their entrypoint in the test's root library.
+@pragma('vm:entry-point')
+void overlayMain() => app.overlayMain();
+
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
   testWidgets('launch, native app list, SQLite timer and pet overlay', (
