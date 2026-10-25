@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="yeogibwayong 앱 아이콘" width="124">
+</p>
+
 <h1 align="center">여기봐용</h1>
 
 <p align="center">
@@ -18,17 +22,23 @@
 
 ## 구성
 
-![여기봐용 서비스 구성](docs/assets/readme/architecture.svg)
+<p align="center">
+  <img src="docs/assets/readme/architecture.svg" alt="여기봐용 서비스 구성" width="1120">
+</p>
 
 Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면 상태는 Provider로 관리하고, 사용량과 반려동물 정보는 SQLite에 저장합니다. 다른 앱 위에 표시되는 오버레이는 `lib/overlay/overlay_main.dart`에서 따로 시작합니다.
 
+<div align="center">
+
 | 위치 | 내용 |
-|---|---|
+|:---:|:---:|
 | `lib/screens/` | 홈, 통계, 타이머, 반려동물, 설정과 권한 안내 |
 | `lib/providers/` | 사용량, 타이머, 반려동물, 설정 상태 |
 | `lib/services/` | 감시, 사용량 조회, 오버레이와 알림 |
 | `lib/data/` | SQLite 스키마와 repository |
 | Android `MainActivity.kt` | 제조사 설정 화면으로 이동하는 MethodChannel |
+
+</div>
 
 ## 사용 시간 감시
 
@@ -42,22 +52,28 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 집중 타이머
 
+
 시작과 재개 시점에 종료 시각을 정하고, 매초 현재 시각과의 차이로 남은 시간을 구합니다. 일시정지하면 남은 시간만 보관합니다. 타이머 tick을 계속 차감하는 방식에서 생길 수 있는 누적 오차를 피하려는 구현입니다.
 
 완료하면 `timer_sessions`에 기록하고 반려동물 오버레이를 표시합니다. 취소한 세션은 `was_interrupted = 1`로 저장합니다. 시작·재개할 때 완료 알림을 예약하고, 일시정지·취소하면 예약을 취소합니다. 실행 상태는 `active_timer`에 저장되어 앱 프로세스가 종료돼도 다음 실행 시 남은 시간 또는 완료 상태를 복구합니다. 완료 기록과 상태 변경은 한 트랜잭션으로 저장합니다. 정확한 알람 특별 권한을 요구하지 않는 예약 방식이므로 절전 중 알림이 늦어질 수 있습니다. 홈의 집중 타이머 카드로 다시 열 수 있습니다.
 
 ## 반려동물과 기록
 
+
 갤러리 사진을 정사각형으로 잘라 앱 저장소에 복사합니다. `pets.image_path`에 경로를 저장하고 활성 반려동물을 선택하면 사용 한도 알림과 타이머 완료에 같은 사진을 사용합니다. 홈에서는 가속도 센서 값에 따라 사진이 기울어집니다.
 
+<div align="center">
+
 | 테이블 | 기록 |
-|---|---|
+|:---:|:---:|
 | `pets` | 이름, 사진 경로, 활성 여부 |
 | `monitored_apps` | 감시 앱과 하루 한도 |
 | `usage_log_daily` | 앱·날짜별 사용 시간 |
 | `popup_history` | 오버레이 표시 시각과 사유 |
 | `timer_sessions` | 집중 세션과 중단 여부 |
 | `active_timer` | 복구할 실행·일시정지·완료 타이머 한 개 |
+
+</div>
 
 테이블 간 외래 키 제약은 없습니다. `package_name`과 `pet_id` 값으로 연결하며, 사용 시간은 `(package_name, date_string)` 유니크 키로 하루 한 행을 갱신합니다.
 
@@ -67,8 +83,10 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 기술별 역할
 
+<div align="center">
+
 | 기술 | 용도 | 위치 |
-|------|------|------|
+|:---:|:---:|:---:|
 | Flutter · Provider | `ChangeNotifier`로 타이머 · 반려동물 · 사용량 · 설정 상태를 분리. 홈의 반려동물은 `sensors_plus` 가속도 값에 따라 기울어짐 | `lib/providers/` |
 | SQLite (sqflite) | `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions`, `active_timer` 여섯 테이블 | `lib/data/database/database_service.dart` |
 | UsageStats API | `usage_stats` 패키지로 오늘 앱별 포그라운드 시간을 읽고, 감시할 앱은 Kotlin MethodChannel로 실행 가능한 앱 목록에서 선택 | `lib/services/usage_tracking_service.dart` |
@@ -76,6 +94,8 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 | image_picker · image_cropper | 갤러리 사진을 고르고 정사각형으로 잘라 앱 저장소에 복사, 경로는 `pets.image_path`에 저장 | `lib/screens/pet_management/pet_management_screen.dart` |
 | fl_chart | 통계 화면의 일간 · 주간 막대 차트(`usage_log_daily`) | `lib/screens/statistics/statistics_screen.dart` |
 | flutter_local_notifications · Google AdMob | 상시 알림과 로컬 알림. 배너는 `BannerAdWidget` | `lib/services/notification_service.dart`, `lib/widgets/banner_ad_widget.dart` |
+
+</div>
 
 ### 감시 서비스와 설정
 
