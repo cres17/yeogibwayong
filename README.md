@@ -27,7 +27,7 @@
 Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면 상태는 Provider로 관리하고, 사용량과 반려동물 정보는 SQLite에 저장합니다. 다른 앱 위에 표시되는 오버레이는 `lib/overlay/overlay_main.dart`에서 따로 시작합니다.
 
 | 위치 | 내용 |
-|---|---|
+|:---:|:---:|
 | `lib/screens/` | 홈, 통계, 타이머, 반려동물, 설정과 권한 안내 |
 | `lib/providers/` | 사용량, 타이머, 반려동물, 설정 상태 |
 | `lib/services/` | 감시, 사용량 조회, 오버레이와 알림 |
@@ -36,7 +36,6 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 사용 시간 감시
 
-<p><img src="https://img.shields.io/badge/MAIN%20FEATURE-7E9B53?style=flat-square" alt="MAIN 기능" height="20"></p>
 
 포그라운드 서비스가 5초마다 UsageStats에서 오늘의 앱별 사용량을 읽습니다. 검사 중이면 다음 검사를 건너뛰고, 설정은 매번 `reload()`해 앱에서 바꾼 값을 반영합니다.
 
@@ -48,7 +47,6 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 집중 타이머
 
-<p><img src="https://img.shields.io/badge/SUB%20FEATURE-B9C9A2?style=flat-square" alt="SUB 기능" height="20"></p>
 
 시작과 재개 시점에 종료 시각을 정하고, 매초 현재 시각과의 차이로 남은 시간을 구합니다. 일시정지하면 남은 시간만 보관합니다. 타이머 tick을 계속 차감하는 방식에서 생길 수 있는 누적 오차를 피하려는 구현입니다.
 
@@ -56,12 +54,11 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 반려동물과 기록
 
-<p><img src="https://img.shields.io/badge/SUB%20FEATURE-B9C9A2?style=flat-square" alt="SUB 기능" height="20"></p>
 
 갤러리 사진을 정사각형으로 잘라 앱 저장소에 복사합니다. `pets.image_path`에 경로를 저장하고 활성 반려동물을 선택하면 사용 한도 알림과 타이머 완료에 같은 사진을 사용합니다. 홈에서는 가속도 센서 값에 따라 사진이 기울어집니다.
 
 | 테이블 | 기록 |
-|---|---|
+|:---:|:---:|
 | `pets` | 이름, 사진 경로, 활성 여부 |
 | `monitored_apps` | 감시 앱과 하루 한도 |
 | `usage_log_daily` | 앱·날짜별 사용 시간 |
@@ -77,7 +74,7 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 ## 기술별 역할
 
 | 기술 | 용도 | 위치 |
-|------|------|------|
+|:---:|:---:|:---:|
 | Flutter · Provider | `ChangeNotifier`로 타이머 · 반려동물 · 사용량 · 설정 상태를 분리. 홈의 반려동물은 `sensors_plus` 가속도 값에 따라 기울어짐 | `lib/providers/` |
 | SQLite (sqflite) | `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 다섯 테이블 | `lib/data/database/database_service.dart` |
 | UsageStats API | `usage_stats` 패키지로 오늘 앱별 포그라운드 시간을 읽고, 감시할 앱은 `device_apps`로 설치 목록에서 선택 | `lib/services/usage_tracking_service.dart` |
