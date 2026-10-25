@@ -2,17 +2,12 @@
 
 # 여기봐용
 
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logoColor=white&logo=flutter)
-![Provider](https://img.shields.io/badge/Provider-355A85?style=flat&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logoColor=white&logo=sqlite)
-![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logoColor=white&logo=kotlin)
-![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logoColor=black&logo=android)
-![UsageStats API](https://img.shields.io/badge/UsageStats%20API-3DDC84?style=flat&logoColor=black)
-![flutter_background_service](https://img.shields.io/badge/flutter__background__service-2F6B4F?style=flat&logoColor=white)
-![WorkManager](https://img.shields.io/badge/WorkManager-4D5868?style=flat&logoColor=white)
-![flutter_overlay_window](https://img.shields.io/badge/flutter__overlay__window-8A6420?style=flat&logoColor=white)
+
+<p>Flutter · Provider · SQLite · Kotlin</p>
 
 </div>
+
+[구조](#architecture) · [구현 살펴보기](#implementation)
 
 내 반려동물 사진이 휴대폰 화면 위에 나타나 "그만 보고 여기 봐"라고 알려 주는 스크린 타임 관리 앱입니다. 다른 앱을 강제로 막는 대신, 사용자가 정한 앱의 하루 사용 시간이 한도를 넘으면 반려동물 캐릭터가 다른 앱 위에 잠깐 떠오릅니다. 반려동물과 함께하는 집중 타이머와 앱별 사용 통계도 제공합니다. Android 전용이며 한국어 · 영어를 지원합니다.
 
@@ -24,7 +19,9 @@
 | 반려동물 | 사진을 골라 잘라서 캐릭터 등록, 활성 반려동물 선택 |
 | 앱 선택 · 설정 | 감시할 앱과 하루 한도, 오버레이 표시 시간, 권한 안내 |
 
-## 전체 아키텍처
+<a id="architecture"></a>
+
+## 구조 한눈에 보기
 
 <p align="center">
   <img src="docs/assets/readme/architecture.svg" alt="여기봐용 전체 아키텍처" width="100%">
@@ -47,6 +44,8 @@ lib/
 └── l10n/          한국어 · 영어 문구
 android/.../MainActivity.kt   제조사 자동 실행 설정 화면을 여는 MethodChannel
 ```
+
+<a id="implementation"></a>
 
 ## 기능 흐름
 
