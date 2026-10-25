@@ -64,6 +64,22 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 사용량 조회에는 사용 기록 접근, 오버레이에는 다른 앱 위에 표시 권한이 필요합니다. 포그라운드 서비스와 타이머는 알림 권한을 사용합니다. 앱의 권한 안내 화면에서 시스템 설정으로 이동할 수 있습니다.
 
+## 기술별 역할
+
+| 기술 | 용도 | 위치 |
+|------|------|------|
+| Flutter · Provider | `ChangeNotifier`로 타이머 · 반려동물 · 사용량 · 설정 상태를 분리. 홈의 반려동물은 `sensors_plus` 가속도 값에 따라 기울어짐 | `lib/providers/` |
+| SQLite (sqflite) | `pets`, `monitored_apps`, `usage_log_daily`, `popup_history`, `timer_sessions` 다섯 테이블 | `lib/data/database/database_service.dart` |
+| UsageStats API | `usage_stats` 패키지로 오늘 앱별 포그라운드 시간을 읽고, 감시할 앱은 `device_apps`로 설치 목록에서 선택 | `lib/services/usage_tracking_service.dart` |
+| flutter_overlay_window | 등록한 반려동물 사진을 다른 앱 위에 정해진 시간 동안 표시. 오버레이는 별도 진입점에서 그림 | `lib/overlay/overlay_main.dart` |
+| image_picker · image_cropper | 갤러리 사진을 고르고 정사각형으로 잘라 앱 저장소에 복사, 경로는 `pets.image_path`에 저장 | `lib/screens/pet_management/pet_management_screen.dart` |
+| fl_chart | 통계 화면의 일간 · 주간 막대 차트(`usage_log_daily`) | `lib/screens/statistics/statistics_screen.dart` |
+| flutter_local_notifications · Google AdMob | 상시 알림과 로컬 알림. 배너는 `BannerAdWidget` | `lib/services/notification_service.dart`, `lib/widgets/banner_ad_widget.dart` |
+
+### 감시 서비스와 설정
+
+flutter_background_service가 사용 시간 감시를 이어가고 WorkManager가 서비스 복구를 보조합니다. SharedPreferences는 사용자 설정, package_info_plus는 설정 화면의 버전·빌드 번호 표시에 사용합니다. 타이머 기록·사용량·팝업 이력은 SQLite에 남기므로 설정값과 활동 기록의 저장 위치가 다릅니다.
+
 ## 실행
 
 Android 기기와 Dart SDK `^3.11.5`가 필요합니다.
