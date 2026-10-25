@@ -222,9 +222,14 @@ Future<void> _checkUsage(
         final overlayGranted = await FlutterOverlayWindow.isPermissionGranted();
         if (!overlayGranted) continue;
 
+        final ratio = (prefs.getDouble(PrefKeys.displayPixelRatio) ?? 1).clamp(
+          0.5,
+          8.0,
+        );
+        final pixels = (240 * ratio).round();
         await FlutterOverlayWindow.showOverlay(
-          height: 240,
-          width: 240,
+          height: pixels,
+          width: pixels,
           alignment: OverlayAlignment.center,
           flag: OverlayFlag.defaultFlag,
           overlayTitle: '여기봐용',
@@ -235,7 +240,13 @@ Future<void> _checkUsage(
           OverlayDataKeys.triggerType: TriggerType.usageExceeded,
           OverlayDataKeys.packageName: packageName,
           OverlayDataKeys.displaySeconds: overlayDurationSeconds,
-        });
+        }).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            debugPrint('Background overlay acknowledgement timed out');
+            return null;
+          },
+        );
 
         state.markShown(packageName);
 

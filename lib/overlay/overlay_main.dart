@@ -21,7 +21,7 @@ class _OverlayApp extends StatefulWidget {
   State<_OverlayApp> createState() => _OverlayAppState();
 }
 
-class _OverlayAppState extends State<_OverlayApp> {
+class _OverlayAppState extends State<_OverlayApp> with WidgetsBindingObserver {
   String? _imagePath;
   Timer? _autoCloseTimer;
   StreamSubscription<dynamic>? _subscription;
@@ -30,18 +30,24 @@ class _OverlayAppState extends State<_OverlayApp> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _subscription = FlutterOverlayWindow.overlayListener.listen(_onData);
     _autoCloseTimer = Timer(const Duration(seconds: 30), _close);
     _loadFallback();
   }
 
-  Future<void> _loadFallback() async {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _loadFallback(force: true);
+  }
+
+  Future<void> _loadFallback({bool force = false}) async {
     // Native service startup can race the first shareData call.
     try {
       final pet = await PetRepository().getActive();
       final prefs = await SharedPreferences.getInstance();
       await prefs.reload();
-      if (!mounted || _receivedData) return;
+      if (!mounted || (_receivedData && !force)) return;
       _onData({
         OverlayDataKeys.petImagePath: pet?.imagePath,
         OverlayDataKeys.displaySeconds:
@@ -68,12 +74,24 @@ class _OverlayAppState extends State<_OverlayApp> {
     _autoCloseTimer = Timer(Duration(seconds: seconds), _close);
   }
 
-  void _close() => FlutterOverlayWindow.closeOverlay();
+  Future<void> _close() async {
+    try {
+      if (await FlutterOverlayWindow.isActive()) {
+        await FlutterOverlayWindow.closeOverlay().timeout(
+          const Duration(seconds: 2),
+          onTimeout: () => false,
+        );
+      }
+    } catch (error) {
+      debugPrint('Overlay close failed: $error');
+    }
+  }
 
   @override
   void dispose() {
     _autoCloseTimer?.cancel();
     _subscription?.cancel();
+    WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
 

@@ -8,7 +8,7 @@ adb shell pm grant com.cres.yeogibwayong android.permission.POST_NOTIFICATIONS
 adb logcat -c
 # The integration runner exercises real SQLite, platform channels and overlay.
 set +e
-flutter drive --driver=test_driver/integration_test.dart --target=integration_test/app_smoke_test.dart -d emulator-5554 > docs/verification/runtime/integration.log 2>&1
+flutter drive --no-start-paused --timeout=240 --screenshot=docs/verification/runtime/driver-screens --driver=test_driver/integration_test.dart --target=integration_test/app_smoke_test.dart -d emulator-5554 > docs/verification/runtime/integration.log 2>&1
 smoke_status=$?
 set -e
 cat docs/verification/runtime/integration.log

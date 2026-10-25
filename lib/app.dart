@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants.dart';
 import 'core/theme.dart';
@@ -29,12 +30,29 @@ class _YeogiBwayongAppState extends State<YeogiBwayongApp>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _storeDisplayScale());
     _usageUpdateSub = FlutterBackgroundService()
         .on(ServiceEvents.usageUpdate)
         .listen((data) {
           if (data == null || !mounted) return;
           context.read<UsageProvider>().onUsageUpdate(data);
         });
+  }
+
+  Future<void> _storeDisplayScale() async {
+    final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+    if (view == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(PrefKeys.displayPixelRatio, view.devicePixelRatio);
+    } catch (error) {
+      debugPrint('Display scale cache unavailable: $error');
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    _storeDisplayScale();
   }
 
   @override

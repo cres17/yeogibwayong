@@ -11,6 +11,7 @@ class PrefKeys {
   static const onboardingDone = 'onboarding_done';
   static const usageTrackingEnabled = 'usage_tracking_enabled';
   static const dailyResetHour = 'daily_reset_hour';
+  static const displayPixelRatio = 'display_pixel_ratio';
 }
 
 class ServiceEvents {
