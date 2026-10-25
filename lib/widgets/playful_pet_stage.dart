@@ -136,7 +136,9 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final stageHeight = widget.compact ? 240.0 : 360.0;
+    final extraTextScale = (MediaQuery.textScalerOf(context).scale(16) / 16 - 1)
+        .clamp(0.0, 3.0);
+    final stageHeight = (widget.compact ? 240.0 : 360.0) + extraTextScale * 200;
     final avatarSize = widget.compact ? 104.0 : 136.0;
 
     return GestureDetector(

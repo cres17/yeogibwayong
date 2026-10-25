@@ -81,11 +81,10 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
     final selectedCount = monitoredMap.length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('앱별 제한'),
-        bottom: PreferredSize(
-          preferredSize: const Size.fromHeight(98),
-          child: Padding(
+      appBar: AppBar(title: const Text('앱별 제한')),
+      body: Column(
+        children: [
+          Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
             child: Column(
               children: [
@@ -99,47 +98,56 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
               ],
             ),
           ),
-        ),
-      ),
-      body: _loading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(_error!),
-                  TextButton(
-                    onPressed: _loadInstalledApps,
-                    child: const Text('다시 시도'),
-                  ),
-                ],
-              ),
-            )
-          : _filteredApps.isEmpty
-          ? const _EmptySearchState()
-          : ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-              itemCount: _filteredApps.length,
-              separatorBuilder: (_, _) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final app = _filteredApps[index];
-                final monitored = monitoredMap[app.packageName];
-                return _AppLimitCard(
-                  app: app,
-                  monitored: monitored,
-                  usedSeconds: usageProvider.todaySecondsFor(app.packageName),
-                  onTap: () =>
-                      _openLimitSheet(context, app, monitored, usageProvider),
-                  onRemove: monitored == null
-                      ? null
-                      : () => _saveChange(
-                          () =>
-                              usageProvider.removeMonitoredApp(app.packageName),
+          Expanded(
+            child: _loading
+                ? const Center(child: CircularProgressIndicator())
+                : _error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(_error!),
+                        TextButton(
+                          onPressed: _loadInstalledApps,
+                          child: const Text('다시 시도'),
                         ),
-                );
-              },
-            ),
+                      ],
+                    ),
+                  )
+                : _filteredApps.isEmpty
+                ? const _EmptySearchState()
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    itemCount: _filteredApps.length,
+                    separatorBuilder: (_, _) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final app = _filteredApps[index];
+                      final monitored = monitoredMap[app.packageName];
+                      return _AppLimitCard(
+                        app: app,
+                        monitored: monitored,
+                        usedSeconds: usageProvider.todaySecondsFor(
+                          app.packageName,
+                        ),
+                        onTap: () => _openLimitSheet(
+                          context,
+                          app,
+                          monitored,
+                          usageProvider,
+                        ),
+                        onRemove: monitored == null
+                            ? null
+                            : () => _saveChange(
+                                () => usageProvider.removeMonitoredApp(
+                                  app.packageName,
+                                ),
+                              ),
+                      );
+                    },
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

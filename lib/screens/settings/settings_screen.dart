@@ -340,19 +340,22 @@ class _SettingsCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(22),
         border: Border.all(color: cs.outlineVariant),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            title,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: cs.primary,
-              fontWeight: FontWeight.w900,
+      child: Material(
+        type: MaterialType.transparency,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                color: cs.primary,
+                fontWeight: FontWeight.w900,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          ...children,
-        ],
+            const SizedBox(height: 4),
+            ...children,
+          ],
+        ),
       ),
     );
   }
