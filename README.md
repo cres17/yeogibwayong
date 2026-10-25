@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="yeogibwayong 앱 아이콘" width="124">
+</p>
+
 <h1 align="center">여기봐용</h1>
 
 <p align="center">
@@ -32,6 +36,8 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 사용 시간 감시
 
+<p><img src="https://img.shields.io/badge/MAIN%20FEATURE-7E9B53?style=flat-square" alt="MAIN 기능" height="20"></p>
+
 포그라운드 서비스가 5초마다 UsageStats에서 오늘의 앱별 사용량을 읽습니다. 검사 중이면 다음 검사를 건너뛰고, 설정은 매번 `reload()`해 앱에서 바꾼 값을 반영합니다.
 
 조회한 사용량을 `usage_log_daily`에 저장한 뒤 감시 대상과 하루 한도를 확인합니다. 한도를 넘겼고 같은 앱의 마지막 표시 후 10분이 지났을 때 오버레이를 띄웁니다. 한 번의 검사에서는 하나만 표시합니다.
@@ -42,11 +48,15 @@ Flutter 화면과 백그라운드 감시 서비스를 분리했습니다. 화면
 
 ## 집중 타이머
 
+<p><img src="https://img.shields.io/badge/SUB%20FEATURE-B9C9A2?style=flat-square" alt="SUB 기능" height="20"></p>
+
 시작과 재개 시점에 종료 시각을 정하고, 매초 현재 시각과의 차이로 남은 시간을 구합니다. 일시정지하면 남은 시간만 보관합니다. 타이머 tick을 계속 차감하는 방식에서 생길 수 있는 누적 오차를 피하려는 구현입니다.
 
 완료하면 `timer_sessions`에 기록하고 반려동물 오버레이를 표시합니다. 취소한 세션은 `was_interrupted = 1`로 저장합니다. 앱이 백그라운드로 이동하면 완료 알림을 예약하고, 다시 돌아오면 예약을 취소합니다.
 
 ## 반려동물과 기록
+
+<p><img src="https://img.shields.io/badge/SUB%20FEATURE-B9C9A2?style=flat-square" alt="SUB 기능" height="20"></p>
 
 갤러리 사진을 정사각형으로 잘라 앱 저장소에 복사합니다. `pets.image_path`에 경로를 저장하고 활성 반려동물을 선택하면 사용 한도 알림과 타이머 완료에 같은 사진을 사용합니다. 홈에서는 가속도 센서 값에 따라 사진이 기울어집니다.
 
