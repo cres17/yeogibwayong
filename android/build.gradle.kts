@@ -18,11 +18,14 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(":app")
 }
+
+// usage_stats 1.3.1 still declares SDK 30; AndroidX resources require API 31+.
+// Finalize its DSL with the application's SDK without modifying the pub cache.
 subprojects {
     plugins.withId("com.android.library") {
-        if (project.name == "device_apps") {
-            extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
-                namespace = "fr.g123k.deviceapps"
+        if (project.name == "usage_stats") {
+            extensions.configure<com.android.build.api.variant.LibraryAndroidComponentsExtension>("androidComponents") {
+                finalizeDsl { library -> library.compileSdk = 36 }
             }
         }
     }

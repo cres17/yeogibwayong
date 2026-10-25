@@ -44,7 +44,7 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
     )..repeat(reverse: true);
     _accelerometerSub = accelerometerEventStream(
       samplingPeriod: SensorInterval.gameInterval,
-    ).listen(_onAccelerometer);
+    ).listen(_onAccelerometer, onError: (Object _) {});
   }
 
   @override
@@ -54,6 +54,16 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
     _comboTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   void _onAccelerometer(AccelerometerEvent event) {
@@ -126,7 +136,7 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final cs = theme.colorScheme;
-    final stageHeight = widget.compact ? 240.0 : 360.0;
+    final stageMinHeight = widget.compact ? 240.0 : 360.0;
     final avatarSize = widget.compact ? 104.0 : 136.0;
 
     return GestureDetector(
@@ -135,7 +145,7 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
       onVerticalDragEnd: (_) => _scheduleIdle(),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 220),
-        height: stageHeight,
+        constraints: BoxConstraints(minHeight: stageMinHeight),
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: _stageColor(cs),
@@ -143,6 +153,8 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
           border: Border.all(color: cs.outlineVariant.withValues(alpha: 0.55)),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
@@ -166,7 +178,7 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
                   _resetGame();
                 },
               ),
-            const Spacer(),
+            const SizedBox(height: 12),
             AnimatedBuilder(
               animation: _controller,
               builder: (context, child) {
@@ -185,7 +197,7 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
               },
               child: _PetActor(pet: widget.pet, size: avatarSize, mood: _mood),
             ),
-            const Spacer(),
+            const SizedBox(height: 12),
             _GameGauge(
               game: _game,
               charge: _charge,

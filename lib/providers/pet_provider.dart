@@ -93,8 +93,9 @@ class PetProvider extends ChangeNotifier {
 
   Future<void> deletePet(int id) async {
     await _petRepo.delete(id);
-    _pets = _pets.where((p) => p.id != id).toList();
-    if (_activePet?.id == id) _activePet = null;
-    notifyListeners();
+    await load();
+    if (_activePet?.id != null) {
+      await _settingsRepo.setSelectedPetId(_activePet!.id!);
+    }
   }
 }

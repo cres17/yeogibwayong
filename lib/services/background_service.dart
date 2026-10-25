@@ -6,7 +6,8 @@ import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 import 'package:sqflite/sqflite.dart';
-import 'package:path/path.dart' as p;
+import '../data/database/database_service.dart';
+import '../core/utils/usage_day.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../core/constants.dart';
@@ -18,7 +19,9 @@ FlutterBackgroundService getBackgroundService() => FlutterBackgroundService();
 Future<void> startUsageBackgroundService() async {
   final service = getBackgroundService();
   final running = await service.isRunning();
-  if (!running) await service.startService();
+  if (!running && !await service.startService()) {
+    throw StateError('Background service did not start');
+  }
 }
 
 Future<void> stopUsageBackgroundService() async {
@@ -44,15 +47,14 @@ Future<void> onServiceStart(ServiceInstance service) async {
   }
 
   // Open DB independently — each isolate keeps its own connection.
-  final dbPath = await getDatabasesPath();
-  final db = await openDatabase(p.join(dbPath, 'yeogibwayong.db'));
+  final db = await DatabaseService.instance.database;
 
   Timer? pollingTimer;
 
   // Main isolate can send stopService to shut us down cleanly.
   service.on(ServiceEvents.stopService).listen((_) async {
     pollingTimer?.cancel();
-    await db.close();
+    // A pending poll may still be finishing; the isolate owns this connection.
     await service.stopSelf();
   });
 
@@ -125,37 +127,52 @@ Future<void> _checkUsage(
     final tracker = UsageTrackingService.instance;
 
     // Skip if permission not granted (avoids SecurityException).
-    if (!await tracker.hasPermission()) return;
+    if (!await tracker.hasPermission()) {
+      await service.stopSelf();
+      return;
+    }
 
     final prefs = await SharedPreferences.getInstance();
     // SharedPreferences caches values per isolate. Settings changed in the
     // main isolate are only visible here after reloading from the platform.
     await prefs.reload();
-    if (prefs.getBool(PrefKeys.usageTrackingEnabled) != true) return;
+    if (prefs.getBool(PrefKeys.usageTrackingEnabled) != true) {
+      await service.stopSelf();
+      return;
+    }
 
     final dailyResetHour = prefs.getInt(PrefKeys.dailyResetHour) ?? 0;
     final overlayDurationSeconds =
         (prefs.getInt(PrefKeys.overlayDurationSeconds) ?? 5).clamp(3, 30);
-    final today = _todayString(dailyResetHour);
+    final today = UsageDay.key(DateTime.now(), dailyResetHour);
 
     // Fetch all today's usage from UsageStats API.
-    final allUsage = await tracker.getAllTodayUsage(
-      dailyResetHour: dailyResetHour,
-    );
+    final snapshot = await tracker.snapshot(dailyResetHour: dailyResetHour);
+    final allUsage = snapshot.seconds;
 
-    // Upsert each non-zero entry into usage_log_daily.
-    for (final entry in allUsage.entries) {
-      await db.rawInsert(
-        '''INSERT OR REPLACE INTO usage_log_daily
-           (package_name, date_string, duration_seconds)
-           VALUES (?, ?, ?)''',
-        [entry.key, today, entry.value],
+    // Replace one day's snapshot atomically so readers never see half a poll
+    // or packages left over from an earlier snapshot of the same day.
+    await db.transaction((txn) async {
+      await txn.delete(
+        'usage_log_daily',
+        where: 'date_string = ?',
+        whereArgs: [today],
       );
-    }
+      final batch = txn.batch();
+      for (final entry in allUsage.entries) {
+        batch.insert('usage_log_daily', {
+          'package_name': entry.key,
+          'date_string': today,
+          'duration_seconds': entry.value,
+        });
+      }
+      await batch.commit(noResult: true);
+    });
 
     // Notify main isolate with the full map so UsageProvider can update UI.
     final updatePayload = <String, dynamic>{
       'timestamp': DateTime.now().toIso8601String(),
+      'date': today,
     };
     for (final entry in allUsage.entries) {
       updatePayload['pkg:${entry.key}'] = entry.value;
@@ -180,13 +197,39 @@ Future<void> _checkUsage(
       final limitSeconds = row['daily_limit_seconds'] as int;
       final usedSeconds = allUsage[packageName] ?? 0;
 
-      if (usedSeconds >= limitSeconds && state.canShow(packageName)) {
+      if (packageName == snapshot.foregroundPackage &&
+          usedSeconds >= limitSeconds &&
+          state.canShow(packageName)) {
+        // Persistent cooldown survives service restarts.
+        final recent = await db.query(
+          'popup_history',
+          columns: ['shown_at'],
+          where: 'package_name = ? AND trigger_type = ?',
+          whereArgs: [packageName, TriggerType.usageExceeded],
+          orderBy: 'shown_at DESC',
+          limit: 1,
+        );
+        final last = recent.isEmpty
+            ? null
+            : DateTime.tryParse(recent.first['shown_at'] as String? ?? '');
+        if (last != null &&
+            DateTime.now().difference(last) < const Duration(minutes: 10)) {
+          continue;
+        }
+        await prefs.reload();
+        if (prefs.getBool(PrefKeys.usageTrackingEnabled) != true) return;
+        if (await FlutterOverlayWindow.isActive()) continue;
         final overlayGranted = await FlutterOverlayWindow.isPermissionGranted();
         if (!overlayGranted) continue;
 
+        final ratio = (prefs.getDouble(PrefKeys.displayPixelRatio) ?? 1).clamp(
+          0.5,
+          8.0,
+        );
+        final pixels = (240 * ratio).round();
         await FlutterOverlayWindow.showOverlay(
-          height: 240,
-          width: 240,
+          height: pixels,
+          width: pixels,
           alignment: OverlayAlignment.center,
           flag: OverlayFlag.defaultFlag,
           overlayTitle: '여기봐용',
@@ -197,7 +240,13 @@ Future<void> _checkUsage(
           OverlayDataKeys.triggerType: TriggerType.usageExceeded,
           OverlayDataKeys.packageName: packageName,
           OverlayDataKeys.displaySeconds: overlayDurationSeconds,
-        });
+        }).timeout(
+          const Duration(seconds: 2),
+          onTimeout: () {
+            debugPrint('Background overlay acknowledgement timed out');
+            return null;
+          },
+        );
 
         state.markShown(packageName);
 
@@ -214,21 +263,9 @@ Future<void> _checkUsage(
         break;
       }
     }
-  } catch (_) {
-    // Swallow errors — polling must never crash the service.
+  } catch (error) {
+    debugPrint('Usage polling failed: $error');
   }
-}
-
-/// Returns the current "day" string (YYYY-MM-DD) accounting for custom reset hour.
-String _todayString(int dailyResetHour) {
-  final now = DateTime.now();
-  final resetToday = DateTime(now.year, now.month, now.day, dailyResetHour);
-  final effectiveDate = now.isBefore(resetToday)
-      ? resetToday.subtract(const Duration(days: 1))
-      : now;
-  return '${effectiveDate.year.toString().padLeft(4, '0')}-'
-      '${effectiveDate.month.toString().padLeft(2, '0')}-'
-      '${effectiveDate.day.toString().padLeft(2, '0')}';
 }
 
 // ─── Called from main isolate (main.dart) ────────────────────────────────────
@@ -239,6 +276,8 @@ Future<void> initializeBackgroundService() async {
     androidConfiguration: AndroidConfiguration(
       onStart: onServiceStart,
       autoStart: false,
+      autoStartOnBoot: false,
+      foregroundServiceTypes: [AndroidForegroundType.specialUse],
       isForegroundMode: true,
       notificationChannelId: 'foreground_service',
       initialNotificationTitle: '여기봐용 실행 중',

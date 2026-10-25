@@ -16,30 +16,7 @@ class TimerScreen extends StatefulWidget {
   State<TimerScreen> createState() => _TimerScreenState();
 }
 
-class _TimerScreenState extends State<TimerScreen>
-    with WidgetsBindingObserver {
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addObserver(this);
-  }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    super.dispose();
-  }
-
-  @override
-  void didChangeAppLifecycleState(AppLifecycleState state) {
-    final timer = context.read<TimerProvider>();
-    if (state == AppLifecycleState.paused && timer.isRunning) {
-      timer.scheduleBackgroundNotification();
-    } else if (state == AppLifecycleState.resumed) {
-      timer.cancelBackgroundNotification();
-    }
-  }
-
+class _TimerScreenState extends State<TimerScreen> {
   Future<bool> _onPopInvoked(TimerProvider timer) async {
     if (!timer.isRunning && !timer.isPaused) return true;
     final confirmed = await showDialog<bool>(
@@ -82,16 +59,38 @@ class _TimerScreenState extends State<TimerScreen>
       child: Scaffold(
         appBar: AppBar(title: const Text('타이머')),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                _formatRemaining(provider.remainingSeconds),
-                style: Theme.of(context).textTheme.displayLarge,
-              ),
-              const SizedBox(height: 32),
-              _TimerControls(provider: provider),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text(
+                  _formatRemaining(provider.remainingSeconds),
+                  style: Theme.of(context).textTheme.displayLarge,
+                ),
+                const Padding(
+                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                  child: Text(
+                    '집중 시간은 기기에 저장돼요. 백그라운드 알림은 절전 설정에 따라 늦어질 수 있어요.',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                if (provider.error != null)
+                  Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(provider.error!, textAlign: TextAlign.center),
+                  ),
+                if (provider.isCompleted)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 16),
+                    child: Text('집중 완료! 잠깐 쉬어가요.'),
+                  ),
+                if (provider.busy)
+                  const CircularProgressIndicator()
+                else
+                  _TimerControls(provider: provider),
+              ],
+            ),
           ),
         ),
       ),
@@ -108,39 +107,33 @@ class _TimerControls extends StatelessWidget {
     return switch (provider.state) {
       TimerState.idle => _StartButton(onStart: () => _showPicker(context)),
       TimerState.running => Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            OutlinedButton(
-              onPressed: provider.pause,
-              child: const Text('일시 정지'),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton(
-              onPressed: () => _confirmCancel(context),
-              child: const Text('취소'),
-            ),
-          ],
-        ),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          OutlinedButton(onPressed: provider.pause, child: const Text('일시 정지')),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: () => _confirmCancel(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
       TimerState.paused => Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            FilledButton(
-              onPressed: provider.resume,
-              child: const Text('재개'),
-            ),
-            const SizedBox(width: 12),
-            OutlinedButton(
-              onPressed: () => _confirmCancel(context),
-              child: const Text('취소'),
-            ),
-          ],
-        ),
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          FilledButton(onPressed: provider.resume, child: const Text('재개')),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            onPressed: () => _confirmCancel(context),
+            child: const Text('취소'),
+          ),
+        ],
+      ),
       TimerState.completed => FilledButton(
-          onPressed: () {
-            provider.acknowledgeCompletion();
-          },
-          child: const Text('확인'),
-        ),
+        onPressed: () {
+          provider.acknowledgeCompletion();
+        },
+        child: const Text('확인'),
+      ),
     };
   }
 
@@ -209,38 +202,39 @@ class _DurationPickerState extends State<_DurationPicker> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '시간 선택',
-            style: Theme.of(context).textTheme.titleLarge,
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('시간 선택', style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                children: _presets
+                    .map(
+                      (m) => ChoiceChip(
+                        label: Text('$m분'),
+                        selected: _minutes == m,
+                        onSelected: (_) => setState(() => _minutes = m),
+                      ),
+                    )
+                    .toList(),
+              ),
+              const SizedBox(height: 24),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton(
+                  onPressed: () => widget.onSelected(_minutes * 60),
+                  child: Text('$_minutes분 시작'),
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 16),
-          Wrap(
-            spacing: 8,
-            children: _presets
-                .map(
-                  (m) => ChoiceChip(
-                    label: Text('$m분'),
-                    selected: _minutes == m,
-                    onSelected: (_) => setState(() => _minutes = m),
-                  ),
-                )
-                .toList(),
-          ),
-          const SizedBox(height: 24),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: () => widget.onSelected(_minutes * 60),
-              child: Text('$_minutes분 시작'),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

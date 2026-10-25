@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'package:provider/provider.dart';
@@ -5,6 +6,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:workmanager/workmanager.dart';
 
 import 'app.dart';
+import 'overlay/overlay_main.dart' as pet_overlay;
+
 import 'core/constants.dart';
 import 'data/models/pet_model.dart';
 import 'data/repositories/pet_repository.dart';
@@ -18,6 +21,10 @@ import 'providers/usage_provider.dart';
 import 'services/asset_copy_service.dart';
 import 'services/background_service.dart';
 import 'services/notification_service.dart';
+
+// The Android plugin resolves this symbol in the root Dart library.
+@pragma('vm:entry-point')
+void overlayMain() => pet_overlay.overlayMain();
 
 // WorkManager callback — runs in its own isolate, no UI context available.
 // Never show overlay from here; notification-only safe path.
@@ -33,18 +40,64 @@ void workManagerCallbackDispatcher() {
       }
 
       // Re-start the background service if it was killed by the OS.
-      await initializeBackgroundService();
-      await startUsageBackgroundService();
+      try {
+        await NotificationService.instance.initialize();
+        await initializeBackgroundService();
+        await startUsageBackgroundService();
+      } catch (error) {
+        // Android may disallow starting a foreground service from background.
+        // Reopening the app retries; WorkManager must not crash its isolate.
+        debugPrint('Background recovery deferred: $error');
+        return false;
+      }
     }
     return Future.value(true);
   });
 }
 
-void main() async {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await _bootstrap();
+  } catch (error, stack) {
+    debugPrint('Startup failed: $error\n$stack');
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: SafeArea(
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48),
+                  const Padding(
+                    padding: EdgeInsets.all(24),
+                    child: Text(
+                      '앱을 준비하지 못했어요. 저장 공간을 확인하고 다시 시도해주세요.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  FilledButton(onPressed: main, child: const Text('다시 시도')),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
 
+Future<void> _bootstrap() async {
   await NotificationService.instance.initialize();
-  await MobileAds.instance.initialize();
+  if (adsEnabled) {
+    unawaited(
+      MobileAds.instance.initialize().catchError((Object error) {
+        debugPrint('Ads unavailable: $error');
+        return InitializationStatus({});
+      }),
+    );
+  }
   await initializeBackgroundService();
 
   // WorkManager — 15-min recovery heartbeat for Samsung/Xiaomi battery killers.
@@ -79,6 +132,9 @@ void main() async {
   final settingsRepo = SettingsRepository();
   final usageRepo = UsageRepository();
 
+  final timerProvider = TimerProvider();
+  await timerProvider.initialize();
+
   runApp(
     MultiProvider(
       providers: [
@@ -93,10 +149,7 @@ void main() async {
         ),
         ChangeNotifierProvider(create: (_) => UsageProvider(usageRepo)..load()),
         ChangeNotifierProxyProvider<PetProvider, TimerProvider>(
-          create: (ctx) => TimerProvider(
-            getActivePetImagePath: () =>
-                ctx.read<PetProvider>().activePet?.imagePath,
-          ),
+          create: (_) => timerProvider,
           update: (_, petProvider, timerProvider) {
             timerProvider!.updateActivePetCallback(
               () => petProvider.activePet?.imagePath,

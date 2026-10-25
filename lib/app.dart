@@ -3,12 +3,15 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_background_service/flutter_background_service.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'core/constants.dart';
 import 'core/theme.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
 import 'providers/usage_provider.dart';
+import 'providers/timer_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/main_shell.dart';
 
@@ -19,12 +22,15 @@ class YeogiBwayongApp extends StatefulWidget {
   State<YeogiBwayongApp> createState() => _YeogiBwayongAppState();
 }
 
-class _YeogiBwayongAppState extends State<YeogiBwayongApp> {
+class _YeogiBwayongAppState extends State<YeogiBwayongApp>
+    with WidgetsBindingObserver {
   StreamSubscription<Map<String, dynamic>?>? _usageUpdateSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _storeDisplayScale());
     _usageUpdateSub = FlutterBackgroundService()
         .on(ServiceEvents.usageUpdate)
         .listen((data) {
@@ -33,10 +39,38 @@ class _YeogiBwayongAppState extends State<YeogiBwayongApp> {
         });
   }
 
+  Future<void> _storeDisplayScale() async {
+    final view = WidgetsBinding.instance.platformDispatcher.implicitView;
+    if (view == null) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setDouble(PrefKeys.displayPixelRatio, view.devicePixelRatio);
+    } catch (error) {
+      debugPrint('Display scale cache unavailable: $error');
+    }
+  }
+
+  @override
+  void didChangeMetrics() {
+    _storeDisplayScale();
+  }
+
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _usageUpdateSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    context.read<TimerProvider>().setForeground(
+      state == AppLifecycleState.resumed,
+    );
+    if (state == AppLifecycleState.resumed) {
+      context.read<UsageProvider>().load();
+      context.read<SettingsProvider>().load();
+    }
   }
 
   @override

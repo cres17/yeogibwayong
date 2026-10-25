@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../core/constants.dart';
 import 'package:google_mobile_ads/google_mobile_ads.dart';
 
 /// Shows a banner ad. Collapses to zero height if the ad fails to load,
@@ -27,7 +28,7 @@ class _BannerAdWidgetState extends State<BannerAdWidget> {
   @override
   void initState() {
     super.initState();
-    _loadAd();
+    if (adsEnabled) _loadAd();
   }
 
   void _loadAd() {

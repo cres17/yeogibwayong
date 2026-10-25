@@ -48,6 +48,20 @@ class PetRepository {
 
   Future<void> delete(int id) async {
     final db = await _db;
-    await db.delete('pets', where: 'id = ?', whereArgs: [id]);
+    await db.transaction((txn) async {
+      await txn.delete('pets', where: 'id = ?', whereArgs: [id]);
+      final active = await txn.query('pets', where: 'is_active = 1', limit: 1);
+      if (active.isEmpty) {
+        final fallback = await txn.query('pets', orderBy: 'id ASC', limit: 1);
+        if (fallback.isNotEmpty) {
+          await txn.update(
+            'pets',
+            {'is_active': 1},
+            where: 'id = ?',
+            whereArgs: [fallback.first['id']],
+          );
+        }
+      }
+    });
   }
 }

@@ -1,33 +1,51 @@
 import 'dart:async';
-
 import 'package:flutter/foundation.dart';
-
 import '../core/constants.dart';
-import '../data/database/database_service.dart';
+import '../data/repositories/timer_repository.dart';
 import '../services/notification_service.dart';
 import '../services/overlay_service.dart';
-
-export '../services/overlay_service.dart';
 
 enum TimerState { idle, running, paused, completed }
 
 class TimerProvider extends ChangeNotifier {
-  /// Callback that returns the active pet's image path.
-  /// Injected so this provider stays free of PetProvider dependency.
+  TimerProvider({
+    this.getActivePetImagePath,
+    TimerRepository? repository,
+    DateTime Function()? now,
+    Future<void> Function(DateTime)? scheduleNotification,
+    Future<void> Function()? cancelNotification,
+    Future<void> Function(String)? showPet,
+  }) : _repository = repository ?? TimerRepository(),
+       _now = now ?? DateTime.now,
+       _scheduleNotification =
+           scheduleNotification ??
+           NotificationService.instance.scheduleTimerCompleteAt,
+       _cancelNotification =
+           cancelNotification ??
+           NotificationService.instance.cancelBackgroundTimerNotification,
+       _showPet =
+           showPet ??
+           ((path) => OverlayService.instance.show(
+             petImagePath: path,
+             triggerType: TriggerType.timerComplete,
+           ));
+
+  final TimerRepository _repository;
+  final DateTime Function() _now;
+  final Future<void> Function(DateTime) _scheduleNotification;
+  final Future<void> Function() _cancelNotification;
+  final Future<void> Function(String) _showPet;
   String? Function()? getActivePetImagePath;
-
-  TimerProvider({this.getActivePetImagePath});
-
-  void updateActivePetCallback(String? Function() callback) {
-    getActivePetImagePath = callback;
-  }
-
   TimerState _state = TimerState.idle;
   int _durationSeconds = 0;
   DateTime? _endTime;
   DateTime? _startedAt;
   int _remainingSeconds = 0;
   Timer? _ticker;
+  bool _busy = false;
+  bool _disposed = false;
+  bool _foreground = true;
+  String? _error;
 
   TimerState get state => _state;
   int get durationSeconds => _durationSeconds;
@@ -36,99 +54,176 @@ class TimerProvider extends ChangeNotifier {
   bool get isPaused => _state == TimerState.paused;
   bool get isIdle => _state == TimerState.idle;
   bool get isCompleted => _state == TimerState.completed;
+  bool get busy => _busy;
+  String? get error => _error;
 
-  void start(int seconds) {
-    assert(seconds > 0);
+  void updateActivePetCallback(String? Function() callback) =>
+      getActivePetImagePath = callback;
+  void _notify() {
+    if (!_disposed) notifyListeners();
+  }
+
+  Map<String, dynamic> _snapshot() => {
+    'state': _state.name,
+    'duration': _durationSeconds,
+    'remaining': _remainingSeconds,
+    'startedAt': _startedAt?.toIso8601String(),
+    'endTime': _endTime?.toIso8601String(),
+  };
+
+  void _restore(Map<String, dynamic> data) {
+    _state = TimerState.values.byName(data['state'] as String);
+    _durationSeconds = data['duration'] as int;
+    _remainingSeconds = data['remaining'] as int;
+    _startedAt = DateTime.tryParse(data['startedAt'] as String? ?? '');
+    _endTime = DateTime.tryParse(data['endTime'] as String? ?? '');
+  }
+
+  /// Serialize transitions and preserve the previous state on storage failure.
+  Future<void> _change(Future<void> Function() operation) async {
+    if (_busy || _disposed) return;
+    _busy = true;
+    _error = null;
+    final before = _snapshot();
+    _notify();
+    try {
+      await operation();
+    } catch (error) {
+      _restore(before);
+      _error = '타이머를 저장하지 못했어요. 다시 시도해주세요.';
+      debugPrint('Timer transition failed: $error');
+    } finally {
+      _busy = false;
+      _notify();
+    }
+  }
+
+  Future<void> initialize() async {
+    await _change(() async {
+      final data = await _repository.load();
+      if (data != null) _restore(data);
+    });
+    await refresh();
+    if (isRunning) {
+      _startTicker();
+      await _schedule();
+    }
+  }
+
+  Future<void> start(int seconds) => _change(() async {
+    if (!isIdle || seconds <= 0 || seconds > 86400) return;
     _durationSeconds = seconds;
-    _startedAt = DateTime.now();
-    _endTime = _startedAt!.add(Duration(seconds: seconds));
     _remainingSeconds = seconds;
+    _startedAt = _now();
+    _endTime = _startedAt!.add(Duration(seconds: seconds));
     _state = TimerState.running;
+    await _repository.save(_snapshot());
     _startTicker();
-    notifyListeners();
+    await _schedule();
+  });
+
+  int _remaining() =>
+      ((_endTime!.difference(_now()).inMilliseconds / 1000).ceil()).clamp(
+        0,
+        _durationSeconds,
+      );
+
+  Future<void> pause() async {
+    await refresh();
+    await _change(() async {
+      if (!isRunning) return;
+      _remainingSeconds = _remaining();
+      _state = TimerState.paused;
+      _endTime = null;
+      await _repository.save(_snapshot());
+      _ticker?.cancel();
+      await _cancelAlert();
+    });
   }
 
-  void pause() {
-    if (_state != TimerState.running) return;
-    _ticker?.cancel();
-    _remainingSeconds = _endTime!.difference(DateTime.now()).inSeconds;
-    if (_remainingSeconds < 0) _remainingSeconds = 0;
-    _endTime = null;
-    _state = TimerState.paused;
-    NotificationService.instance.cancelBackgroundTimerNotification();
-    notifyListeners();
-  }
-
-  void resume() {
-    if (_state != TimerState.paused) return;
-    _endTime = DateTime.now().add(Duration(seconds: _remainingSeconds));
+  Future<void> resume() => _change(() async {
+    if (!isPaused) return;
+    _endTime = _now().add(Duration(seconds: _remainingSeconds));
     _state = TimerState.running;
+    await _repository.save(_snapshot());
     _startTicker();
-    notifyListeners();
-  }
+    await _schedule();
+  });
 
   Future<void> cancel() async {
-    _ticker?.cancel();
-    await NotificationService.instance.cancelBackgroundTimerNotification();
-    if (_state != TimerState.idle) {
-      await _saveSession(wasInterrupted: true);
+    await refresh();
+    await _change(() async {
+      if (!isRunning && !isPaused) return;
+      await _repository.finish(_session(interrupted: true), null);
+      _reset();
+      await _cancelAlert();
+    });
+  }
+
+  Map<String, dynamic> _session({required bool interrupted}) => {
+    'duration_seconds': _durationSeconds,
+    'started_at': _startedAt!.toIso8601String(),
+    'completed_at': interrupted ? null : _endTime!.toIso8601String(),
+    'was_interrupted': interrupted ? 1 : 0,
+  };
+
+  Future<void> refresh() async {
+    if (!isRunning || _busy || _disposed) return;
+    _remainingSeconds = _remaining();
+    if (_remainingSeconds > 0) {
+      _notify();
+      return;
     }
-    _reset();
-    notifyListeners();
+    await _change(() async {
+      _state = TimerState.completed;
+      await _repository.finish(_session(interrupted: false), _snapshot());
+      _ticker?.cancel();
+      if (_foreground) {
+        await _cancelAlert();
+        final path = getActivePetImagePath?.call();
+        if (path != null && path.isNotEmpty) {
+          try {
+            await _showPet(path);
+          } catch (error) {
+            debugPrint('Pet reminder unavailable: $error');
+          }
+        }
+      }
+    });
   }
 
-  /// Called by TimerScreen's WidgetsBindingObserver when app goes to background.
-  Future<void> scheduleBackgroundNotification() async {
-    if (_state != TimerState.running || _endTime == null) return;
-    await NotificationService.instance.scheduleTimerCompleteAt(_endTime!);
+  Future<void> setForeground(bool foreground) async {
+    _foreground = foreground;
+    await refresh();
+    if (foreground && isCompleted) await _cancelAlert();
   }
 
-  /// Called when the app returns to foreground — cancels the scheduled notification
-  /// because the in-app timer handles completion itself.
-  Future<void> cancelBackgroundNotification() async {
-    await NotificationService.instance.cancelBackgroundTimerNotification();
+  Future<void> _schedule() async {
+    try {
+      await _scheduleNotification(_endTime!);
+    } catch (_) {
+      _error = '타이머는 진행 중이에요. 백그라운드 알림을 예약하지 못했어요.';
+    }
+  }
+
+  Future<void> _cancelAlert() async {
+    try {
+      await _cancelNotification();
+    } catch (_) {
+      _error = '예약 알림을 취소하지 못했어요. 알림 설정을 확인해주세요.';
+    }
   }
 
   void _startTicker() {
     _ticker?.cancel();
-    _ticker = Timer.periodic(const Duration(seconds: 1), (_) => _tick());
-  }
-
-  void _tick() {
-    final remaining = _endTime!.difference(DateTime.now()).inSeconds;
-    if (remaining <= 0) {
-      _ticker?.cancel();
-      _remainingSeconds = 0;
-      _state = TimerState.completed;
-      _saveSession(wasInterrupted: false);
-      _triggerOverlay();
-      notifyListeners();
-    } else {
-      _remainingSeconds = remaining;
-      notifyListeners();
-    }
-  }
-
-  void _triggerOverlay() {
-    final petPath = getActivePetImagePath?.call();
-    if (petPath == null || petPath.isEmpty) return;
-    OverlayService.instance.show(
-      petImagePath: petPath,
-      triggerType: TriggerType.timerComplete,
+    _ticker = Timer.periodic(
+      const Duration(seconds: 1),
+      (_) => unawaited(refresh()),
     );
   }
 
-  Future<void> _saveSession({required bool wasInterrupted}) async {
-    final db = await DatabaseService.instance.database;
-    await db.insert('timer_sessions', {
-      'duration_seconds': _durationSeconds,
-      'started_at': _startedAt?.toIso8601String(),
-      'completed_at': wasInterrupted ? null : DateTime.now().toIso8601String(),
-      'was_interrupted': wasInterrupted ? 1 : 0,
-    });
-  }
-
   void _reset() {
+    _ticker?.cancel();
     _state = TimerState.idle;
     _durationSeconds = 0;
     _endTime = null;
@@ -136,13 +231,15 @@ class TimerProvider extends ChangeNotifier {
     _remainingSeconds = 0;
   }
 
-  void acknowledgeCompletion() {
+  Future<void> acknowledgeCompletion() => _change(() async {
+    if (!isCompleted) return;
+    await _repository.save(null);
     _reset();
-    notifyListeners();
-  }
+  });
 
   @override
   void dispose() {
+    _disposed = true;
     _ticker?.cancel();
     super.dispose();
   }

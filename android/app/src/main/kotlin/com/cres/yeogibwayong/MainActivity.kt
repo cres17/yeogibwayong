@@ -1,6 +1,10 @@
 package com.cres.yeogibwayong
 
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import java.io.ByteArrayOutputStream
+import java.util.concurrent.Executors
 import android.net.Uri
 import android.os.Build
 import io.flutter.embedding.android.FlutterActivity
@@ -9,10 +13,45 @@ import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
 
+    private val appExecutor = Executors.newSingleThreadExecutor()
+
     private val oemChannel = "com.cres.yeogibwayong/oem_settings"
 
     override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
         super.configureFlutterEngine(flutterEngine)
+        MethodChannel(flutterEngine.dartExecutor.binaryMessenger,
+            "com.cres.yeogibwayong/apps").setMethodCallHandler { call, result ->
+            if (call.method != "listLaunchableApps") {
+                result.notImplemented()
+            } else {
+                appExecutor.execute {
+                    try {
+                        val intent = Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_LAUNCHER)
+                        val apps = packageManager.queryIntentActivities(intent, 0)
+                            .distinctBy { it.activityInfo.packageName }
+                            .filter { it.activityInfo.packageName != packageName }
+                            .map { entry ->
+                                val icon = try {
+                                    val drawable = entry.loadIcon(packageManager)
+                                    val bitmap = Bitmap.createBitmap(96, 96, Bitmap.Config.ARGB_8888)
+                                    drawable.setBounds(0, 0, 96, 96)
+                                    drawable.draw(Canvas(bitmap))
+                                    ByteArrayOutputStream().use { output ->
+                                        bitmap.compress(Bitmap.CompressFormat.PNG, 100, output)
+                                        bitmap.recycle()
+                                        output.toByteArray()
+                                    }
+                                } catch (_: Exception) { null }
+                                mapOf("packageName" to entry.activityInfo.packageName,
+                                    "appName" to entry.loadLabel(packageManager).toString(), "icon" to icon)
+                            }
+                        runOnUiThread { result.success(apps) }
+                    } catch (error: Exception) {
+                        runOnUiThread { result.error("APP_LIST_FAILED", error.message, null) }
+                    }
+                }
+            }
+        }
 
         MethodChannel(
             flutterEngine.dartExecutor.binaryMessenger,
@@ -70,6 +109,11 @@ class MainActivity : FlutterActivity() {
                 else -> result.notImplemented()
             }
         }
+    }
+
+    override fun onDestroy() {
+        appExecutor.shutdown()
+        super.onDestroy()
     }
 
     private fun tryStartActivity(intent: Intent): Boolean {

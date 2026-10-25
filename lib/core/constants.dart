@@ -1,3 +1,5 @@
+const adsEnabled = bool.fromEnvironment('ENABLE_ADS', defaultValue: false);
+
 // Isolate 경계를 넘는 모든 키는 여기서 관리 — 오타 방지용 상수
 class PrefKeys {
   PrefKeys._();
@@ -9,6 +11,7 @@ class PrefKeys {
   static const onboardingDone = 'onboarding_done';
   static const usageTrackingEnabled = 'usage_tracking_enabled';
   static const dailyResetHour = 'daily_reset_hour';
+  static const displayPixelRatio = 'display_pixel_ratio';
 }
 
 class ServiceEvents {

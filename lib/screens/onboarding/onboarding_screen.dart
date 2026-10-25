@@ -20,6 +20,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     with WidgetsBindingObserver {
   _PermissionStep _step = _PermissionStep.notification;
   bool _checking = true;
+  final Set<_PermissionStep> _skipped = {};
 
   @override
   void initState() {
@@ -40,6 +41,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   Future<void> _advanceToNextNeeded() async {
+    if (!mounted) return;
     setState(() => _checking = true);
 
     final notification = await Permission.notification.isGranted;
@@ -50,13 +52,13 @@ class _OnboardingScreenState extends State<OnboardingScreen>
     if (!mounted) return;
     setState(() {
       _checking = false;
-      if (!notification) {
+      if (!notification && !_skipped.contains(_PermissionStep.notification)) {
         _step = _PermissionStep.notification;
-      } else if (!overlay) {
+      } else if (!overlay && !_skipped.contains(_PermissionStep.overlay)) {
         _step = _PermissionStep.overlay;
-      } else if (!usage) {
+      } else if (!usage && !_skipped.contains(_PermissionStep.usage)) {
         _step = _PermissionStep.usage;
-      } else if (!battery) {
+      } else if (!battery && !_skipped.contains(_PermissionStep.battery)) {
         _step = _PermissionStep.battery;
       } else {
         _step = _PermissionStep.done;
@@ -89,6 +91,7 @@ class _OnboardingScreenState extends State<OnboardingScreen>
   }
 
   void _denyCurrentStep() {
+    _skipped.add(_step);
     setState(() {
       _step = switch (_step) {
         _PermissionStep.notification => _PermissionStep.overlay,
@@ -112,27 +115,27 @@ class _OnboardingScreenState extends State<OnboardingScreen>
 
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '여기봐용',
-                style: Theme.of(
-                  context,
-                ).textTheme.displaySmall?.copyWith(fontWeight: FontWeight.w900),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                '앱 사용 시간이 길어지면 펫이 살짝 찾아와서 다시 집중할 수 있게 도와줘요.',
-                style: TextStyle(color: cs.onSurfaceVariant, fontSize: 16),
-              ),
-              const SizedBox(height: 24),
-              const PlayfulPetStage(pet: null, compact: true),
-              const SizedBox(height: 18),
-              Expanded(
-                child: Center(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 18),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '여기봐용',
+                  style: Theme.of(context).textTheme.displaySmall?.copyWith(
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  '앱 사용 시간이 길어지면 펫이 살짝 찾아와서 다시 집중할 수 있게 도와줘요.',
+                  style: TextStyle(color: cs.onSurfaceVariant, fontSize: 16),
+                ),
+                const SizedBox(height: 24),
+                const PlayfulPetStage(pet: null, compact: true),
+                const SizedBox(height: 18),
+                Center(
                   child: _checking
                       ? const CircularProgressIndicator()
                       : _PermissionPrompt(
@@ -144,41 +147,41 @@ class _OnboardingScreenState extends State<OnboardingScreen>
                           stepLabel: done ? '완료' : info.stepLabel,
                         ),
                 ),
-              ),
-              if (!done)
-                Row(
-                  children: [
-                    Expanded(
-                      child: OutlinedButton(
-                        onPressed: _denyCurrentStep,
-                        child: const Text('거절'),
+                if (!done)
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: _checking ? null : _denyCurrentStep,
+                          child: const Text('거절'),
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: _allowCurrentStep,
-                        child: const Text('허락'),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: FilledButton(
+                          onPressed: _checking ? null : _allowCurrentStep,
+                          child: const Text('허락'),
+                        ),
                       ),
+                    ],
+                  )
+                else
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton(
+                      onPressed: _finish,
+                      child: const Text('시작하기'),
                     ),
-                  ],
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  child: FilledButton(
+                  ),
+                const SizedBox(height: 10),
+                Center(
+                  child: TextButton(
                     onPressed: _finish,
-                    child: const Text('시작하기'),
+                    child: const Text('나중에 설정할게요'),
                   ),
                 ),
-              const SizedBox(height: 10),
-              Center(
-                child: TextButton(
-                  onPressed: _finish,
-                  child: const Text('나중에 설정할게요'),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

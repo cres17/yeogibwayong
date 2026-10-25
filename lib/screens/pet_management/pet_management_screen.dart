@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 
 import '../../data/models/pet_model.dart';
 import '../../providers/pet_provider.dart';
+import '../../services/overlay_service.dart';
 import '../../widgets/pet_avatar.dart';
 import '../../widgets/playful_pet_stage.dart';
 
@@ -27,7 +28,33 @@ class _PetManagementScreenState extends State<PetManagementScreen> {
     final activePet = provider.activePet;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('펫 놀이터')),
+      appBar: AppBar(
+        title: const Text('펫 놀이터'),
+        actions: [
+          IconButton(
+            tooltip: '팝업 미리보기',
+            icon: const Icon(Icons.preview_outlined),
+            onPressed: activePet == null || _uploading
+                ? null
+                : () => _runPhotoAction(() async {
+                    final overlay = OverlayService.instance;
+                    if (!await overlay.isPermissionGranted()) {
+                      if (!context.mounted) return;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('설정에서 다른 앱 위에 표시 권한을 먼저 허용해주세요.'),
+                        ),
+                      );
+                      return;
+                    }
+                    await overlay.show(
+                      petImagePath: activePet.imagePath,
+                      triggerType: 'preview',
+                    );
+                  }),
+          ),
+        ],
+      ),
       body: provider.loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
@@ -68,11 +95,14 @@ class _PetManagementScreenState extends State<PetManagementScreen> {
                     ...provider.pets.map(
                       (pet) => _PetListItem(
                         pet: pet,
-                        onTap: () => _onPetTap(pet, provider),
+                        onTap: () =>
+                            _runPhotoAction(() => _onPetTap(pet, provider)),
                         onReplace: () => _replacePetPhoto(pet),
                         onDelete: pet.type == 'default'
                             ? null
-                            : () => _onDelete(pet, provider),
+                            : () => _runPhotoAction(
+                                () => _onDelete(pet, provider),
+                              ),
                       ),
                     ),
                 ],
@@ -159,7 +189,27 @@ class _PetManagementScreenState extends State<PetManagementScreen> {
     return destPath;
   }
 
-  Future<void> _startUploadFlow() async {
+  Future<void> _runPhotoAction(Future<void> Function() action) async {
+    if (_uploading) return;
+    setState(() => _uploading = true);
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('사진 작업을 완료하지 못했어요. 권한과 저장 공간을 확인하고 다시 시도해주세요.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _uploading = false);
+    }
+  }
+
+  Future<void> _startUploadFlow() => _runPhotoAction(_addPhoto);
+
+  Future<void> _addPhoto() async {
     final provider = context.read<PetProvider>();
     final messenger = ScaffoldMessenger.of(context);
 
@@ -205,7 +255,7 @@ class _PetManagementScreenState extends State<PetManagementScreen> {
       ),
     );
 
-    if (name == null || name.isEmpty) {
+    if (!mounted || name == null || name.isEmpty) {
       await File(path).delete();
       return;
     }
@@ -231,7 +281,10 @@ class _PetManagementScreenState extends State<PetManagementScreen> {
 
   Future<void> _replaceActivePhoto(PetModel pet) => _replacePetPhoto(pet);
 
-  Future<void> _replacePetPhoto(PetModel pet) async {
+  Future<void> _replacePetPhoto(PetModel pet) =>
+      _runPhotoAction(() => _replacePhoto(pet));
+
+  Future<void> _replacePhoto(PetModel pet) async {
     if (pet.id == null) return;
     final provider = context.read<PetProvider>();
     final messenger = ScaffoldMessenger.of(context);

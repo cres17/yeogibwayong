@@ -31,13 +31,17 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   void _load() => context.read<UsageProvider>().loadStats(_dateString);
 
   void _shiftDate(int days) {
-    setState(() => _selectedDate = _selectedDate.add(Duration(days: days)));
+    setState(() {
+      final next = _selectedDate.add(Duration(days: days));
+      _selectedDate = next.isAfter(_today()) ? _today() : next;
+    });
     _load();
   }
 
   @override
   Widget build(BuildContext context) {
     final loading = context.select<UsageProvider, bool>((p) => p.statsLoading);
+    final error = context.select<UsageProvider, String?>((p) => p.statsError);
 
     return Scaffold(
       appBar: AppBar(title: const Text('통계')),
@@ -70,7 +74,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                 : null,
           ),
           Expanded(
-            child: loading
+            child: error != null
+                ? Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(error),
+                        TextButton(
+                          onPressed: _load,
+                          child: const Text('다시 시도'),
+                        ),
+                      ],
+                    ),
+                  )
+                : loading
                 ? const Center(child: CircularProgressIndicator())
                 : Padding(
                     padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
