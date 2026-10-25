@@ -1,8 +1,27 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:yeogibwayong/services/usage_tracking_service.dart';
 import 'package:yeogibwayong/core/utils/usage_day.dart';
 import 'package:yeogibwayong/core/utils/usage_events.dart';
 
 void main() {
+  test(
+    'Chrome and preinstalled consumer apps are not filtered as system infrastructure',
+    () {
+      expect(UsageTrackingService.isSystemPackage('com.android.chrome'), false);
+      expect(
+        UsageTrackingService.isSystemPackage('com.google.android.youtube'),
+        false,
+      );
+      expect(
+        UsageTrackingService.isSystemPackage('com.android.systemui'),
+        true,
+      );
+      expect(
+        UsageTrackingService.isSystemPackage('com.cres.yeogibwayong'),
+        true,
+      );
+    },
+  );
   final midnight = DateTime(2026, 10, 25);
   AppUsageEvent event(int seconds, int type, [String? app = 'app.a']) =>
       AppUsageEvent(midnight.add(Duration(seconds: seconds)), type, app);

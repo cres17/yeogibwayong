@@ -10,6 +10,7 @@ import 'l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
 import 'providers/usage_provider.dart';
 import 'providers/timer_provider.dart';
+import 'providers/settings_provider.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/main_shell.dart';
 
@@ -50,6 +51,7 @@ class _YeogiBwayongAppState extends State<YeogiBwayongApp>
     );
     if (state == AppLifecycleState.resumed) {
       context.read<UsageProvider>().load();
+      context.read<SettingsProvider>().load();
     }
   }
 

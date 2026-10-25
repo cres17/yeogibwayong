@@ -4,6 +4,7 @@ import '../data/repositories/settings_repository.dart';
 import '../services/background_service.dart';
 import '../services/usage_tracking_service.dart';
 import '../services/overlay_service.dart';
+import '../services/notification_service.dart';
 
 class SettingsProvider extends ChangeNotifier {
   final SettingsRepository _repo;
@@ -58,6 +59,9 @@ class SettingsProvider extends ChangeNotifier {
     _notificationEnabled = value;
     notifyListeners();
     await _repo.setNotificationEnabled(value);
+    if (!value) {
+      await NotificationService.instance.cancelBackgroundTimerNotification();
+    }
   }
 
   Future<void> setSoundEnabled(bool value) async {

@@ -133,7 +133,10 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
                       _openLimitSheet(context, app, monitored, usageProvider),
                   onRemove: monitored == null
                       ? null
-                      : () => usageProvider.removeMonitoredApp(app.packageName),
+                      : () => _saveChange(
+                          () =>
+                              usageProvider.removeMonitoredApp(app.packageName),
+                        ),
                 );
               },
             ),
@@ -157,19 +160,35 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
     );
     if (limit == null) return;
     if (limit == 0) {
-      await provider.removeMonitoredApp(app.packageName);
+      await _saveChange(() => provider.removeMonitoredApp(app.packageName));
       return;
     }
 
-    await provider.addMonitoredApp(
-      MonitoredAppModel(
-        id: existing?.id,
-        packageName: app.packageName,
-        appName: app.appName,
-        dailyLimitSeconds: limit,
-        isEnabled: true,
+    await _saveChange(
+      () => provider.addMonitoredApp(
+        MonitoredAppModel(
+          id: existing?.id,
+          packageName: app.packageName,
+          appName: app.appName,
+          dailyLimitSeconds: limit,
+          isEnabled: true,
+        ),
       ),
     );
+  }
+
+  Future<void> _saveChange(Future<void> Function() action) async {
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('제한을 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해주세요.'),
+          ),
+        );
+      }
+    }
   }
 }
 

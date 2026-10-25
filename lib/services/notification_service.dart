@@ -64,7 +64,8 @@ class NotificationService {
 
     return NotificationDetails(
       android: AndroidNotificationDetails(
-        channelId,
+        // Android channel alert settings are immutable after first creation.
+        '${channelId}_${soundEnabled ? "sound" : "silent"}_${vibrationEnabled ? "vibrate" : "still"}',
         channelName,
         importance: Importance.high,
         priority: Priority.high,

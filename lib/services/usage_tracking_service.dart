@@ -6,11 +6,16 @@ class UsageTrackingService {
   UsageTrackingService._();
   static final UsageTrackingService instance = UsageTrackingService._();
 
-  // Prefixes considered "system" — filtered from the installed-apps list
-  // and from usage queries so they don't pollute monitored-apps data.
-  static const _systemPrefixes = ['com.android.', 'android'];
-
+  // Exact infrastructure packages only. Chrome (com.android.chrome) and other
+  // launchable preinstalled apps must remain selectable and count toward limits.
   static const _systemPackages = {
+    'android',
+    'com.android.systemui',
+    'com.android.settings',
+    'com.android.launcher',
+    'com.android.launcher3',
+    'com.google.android.apps.nexuslauncher',
+    'com.cres.yeogibwayong',
     'com.google.android.gms',
     'com.google.android.gsf',
     'com.google.android.packageinstaller',
@@ -19,13 +24,8 @@ class UsageTrackingService {
     'com.google.android.webview',
   };
 
-  static bool isSystemPackage(String packageName) {
-    if (_systemPackages.contains(packageName)) return true;
-    for (final prefix in _systemPrefixes) {
-      if (packageName.startsWith(prefix)) return true;
-    }
-    return false;
-  }
+  static bool isSystemPackage(String packageName) =>
+      _systemPackages.contains(packageName);
 
   Future<UsageSnapshot> snapshot({int dailyResetHour = 0}) async {
     final now = DateTime.now();
