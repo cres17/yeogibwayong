@@ -24,13 +24,14 @@ class OverlayService {
     int? displaySeconds,
   }) async {
     final now = DateTime.now();
-    if (_lastShownAt != null &&
+    if (triggerType == TriggerType.usageExceeded && _lastShownAt != null &&
         now.difference(_lastShownAt!).inMinutes < _cooldownMinutes) {
       return;
     }
 
     final granted = await isPermissionGranted();
     if (!granted) return;
+    if (await FlutterOverlayWindow.isActive()) return;
 
     await FlutterOverlayWindow.showOverlay(
       height: 240,

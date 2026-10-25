@@ -44,7 +44,7 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
     )..repeat(reverse: true);
     _accelerometerSub = accelerometerEventStream(
       samplingPeriod: SensorInterval.gameInterval,
-    ).listen(_onAccelerometer);
+    ).listen(_onAccelerometer, onError: (Object _) {});
   }
 
   @override
@@ -54,6 +54,16 @@ class _PlayfulPetStageState extends State<PlayfulPetStage>
     _comboTimer?.cancel();
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (MediaQuery.disableAnimationsOf(context)) {
+      _controller.stop();
+    } else if (!_controller.isAnimating) {
+      _controller.repeat(reverse: true);
+    }
   }
 
   void _onAccelerometer(AccelerometerEvent event) {

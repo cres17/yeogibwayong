@@ -2,17 +2,80 @@ import 'package:flutter/material.dart';
 
 enum PermissionType { notification, overlay, usage, battery }
 
-class PermissionGuideScreen extends StatelessWidget {
+class PermissionGuideScreen extends StatefulWidget {
   const PermissionGuideScreen({
     super.key,
     required this.type,
-    required this.isGranted,
+    required this.checkPermission,
     required this.onRequest,
   });
 
   final PermissionType type;
-  final bool isGranted;
-  final VoidCallback onRequest;
+  final Future<bool> Function() checkPermission;
+  final Future<void> Function() onRequest;
+
+  @override
+  State<PermissionGuideScreen> createState() => _PermissionGuideScreenState();
+}
+
+class _PermissionGuideScreenState extends State<PermissionGuideScreen>
+    with WidgetsBindingObserver {
+  bool isGranted = false;
+  bool _busy = true;
+  String? _error;
+  PermissionType get type => widget.type;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _check();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _check();
+  }
+
+  Future<void> _check() async {
+    try {
+      final granted = await widget.checkPermission();
+      if (mounted) {
+        setState(() {
+          isGranted = granted;
+          _busy = false;
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _busy = false;
+          _error = '권한 상태를 확인하지 못했어요.';
+        });
+      }
+    }
+  }
+
+  Future<void> _request() async {
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+    try {
+      await widget.onRequest();
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = '설정을 열지 못했어요. Android 설정에서 직접 허용해주세요.');
+      }
+    }
+    await _check();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,6 +111,7 @@ class PermissionGuideScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(info.howTo),
           const SizedBox(height: 32),
+          if (_error != null) Text(_error!),
           if (isGranted)
             _GrantedChip(label: '허용됨')
           else
@@ -62,7 +126,7 @@ class PermissionGuideScreen extends StatelessWidget {
                 label: Text(
                   type == PermissionType.notification ? '권한 요청' : '설정 열기',
                 ),
-                onPressed: onRequest,
+                onPressed: _busy ? null : _request,
               ),
             ),
         ],

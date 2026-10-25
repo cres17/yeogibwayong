@@ -18,15 +18,6 @@ subprojects {
 subprojects {
     project.evaluationDependsOn(":app")
 }
-subprojects {
-    plugins.withId("com.android.library") {
-        if (project.name == "device_apps") {
-            extensions.configure<com.android.build.gradle.LibraryExtension>("android") {
-                namespace = "fr.g123k.deviceapps"
-            }
-        }
-    }
-}
 
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)

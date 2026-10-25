@@ -8,6 +8,9 @@ import '../../providers/usage_provider.dart';
 import '../../widgets/banner_ad_widget.dart';
 import '../../widgets/playful_pet_stage.dart';
 import '../app_selection/app_selection_screen.dart';
+import '../timer/timer_screen.dart';
+import '../settings/settings_screen.dart';
+import '../../providers/timer_provider.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -34,9 +37,11 @@ class HomeScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.only(right: 12),
             child: FilledButton.tonalIcon(
-              onPressed: () => settings.setUsageTrackingEnabled(
-                !settings.usageTrackingEnabled,
-              ),
+              onPressed: settings.trackingBusy
+                  ? null
+                  : () => settings.setUsageTrackingEnabled(
+                      !settings.usageTrackingEnabled,
+                    ),
               icon: Icon(
                 settings.usageTrackingEnabled
                     ? Icons.visibility
@@ -56,6 +61,38 @@ class HomeScreen extends StatelessWidget {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                 children: [
+                  if (settings.trackingError != null)
+                    Card(
+                      child: ListTile(
+                        leading: const Icon(Icons.info_outline),
+                        title: Text(settings.trackingError!),
+                        trailing: const Icon(Icons.settings_outlined),
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const SettingsScreen(),
+                          ),
+                        ),
+                      ),
+                    ),
+                  if (usage.error != null) Text(usage.error!),
+                  Card(
+                    child: ListTile(
+                      leading: const Icon(Icons.timer_outlined),
+                      title: const Text('집중 타이머'),
+                      subtitle: Text(
+                        context.watch<TimerProvider>().isIdle
+                            ? '5분부터 시작해요. 앱을 닫아도 이어져요.'
+                            : '진행 중인 타이머와 완료 기록을 확인해요.',
+                      ),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const TimerScreen()),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
                   PlayfulPetStage(pet: pet),
                   const SizedBox(height: 14),
                   _TodayOverviewCard(

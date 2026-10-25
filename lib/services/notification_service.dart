@@ -102,6 +102,7 @@ class NotificationService {
     await _plugin.cancel(_timerBackgroundId);
     if (!await _notificationsEnabled()) return;
 
+    if (!endTime.isAfter(DateTime.now())) return;
     final scheduledDate = tz.TZDateTime.from(endTime, tz.local);
     await _plugin.zonedSchedule(
       _timerBackgroundId,
@@ -109,7 +110,7 @@ class NotificationService {
       '여기봐용이 기다리고 있어요.',
       scheduledDate,
       await _alertDetails(channelId: 'timer_complete', channelName: '타이머 완료'),
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
     );

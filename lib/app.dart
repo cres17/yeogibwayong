@@ -9,6 +9,7 @@ import 'core/theme.dart';
 import 'l10n/app_localizations.dart';
 import 'providers/app_provider.dart';
 import 'providers/usage_provider.dart';
+import 'providers/timer_provider.dart';
 import 'screens/onboarding/onboarding_screen.dart';
 import 'screens/shell/main_shell.dart';
 
@@ -19,12 +20,14 @@ class YeogiBwayongApp extends StatefulWidget {
   State<YeogiBwayongApp> createState() => _YeogiBwayongAppState();
 }
 
-class _YeogiBwayongAppState extends State<YeogiBwayongApp> {
+class _YeogiBwayongAppState extends State<YeogiBwayongApp>
+    with WidgetsBindingObserver {
   StreamSubscription<Map<String, dynamic>?>? _usageUpdateSub;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _usageUpdateSub = FlutterBackgroundService()
         .on(ServiceEvents.usageUpdate)
         .listen((data) {
@@ -35,8 +38,19 @@ class _YeogiBwayongAppState extends State<YeogiBwayongApp> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _usageUpdateSub?.cancel();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    context.read<TimerProvider>().setForeground(
+      state == AppLifecycleState.resumed,
+    );
+    if (state == AppLifecycleState.resumed) {
+      context.read<UsageProvider>().load();
+    }
   }
 
   @override

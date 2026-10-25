@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import 'package:usage_stats/usage_stats.dart';
 
 import '../../providers/settings_provider.dart';
+import '../../core/constants.dart';
 import '../../screens/permission_guide/permission_guide_screen.dart';
 import '../../services/oem_settings_service.dart';
 
@@ -100,11 +101,11 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _openPermissionGuide(PermissionType type) {
-    final isGranted = switch (type) {
-      PermissionType.notification => _notificationGranted,
-      PermissionType.overlay => _overlayGranted,
-      PermissionType.usage => _usageGranted,
-      PermissionType.battery => _batteryGranted,
+    Future<bool> check() => switch (type) {
+      PermissionType.notification => Permission.notification.isGranted,
+      PermissionType.overlay => FlutterOverlayWindow.isPermissionGranted(),
+      PermissionType.usage => _isUsageGranted(),
+      PermissionType.battery => Permission.ignoreBatteryOptimizations.isGranted,
     };
     final onRequest = switch (type) {
       PermissionType.notification => _requestNotification,
@@ -117,7 +118,7 @@ class _SettingsScreenState extends State<SettingsScreen>
       MaterialPageRoute(
         builder: (_) => PermissionGuideScreen(
           type: type,
-          isGranted: isGranted,
+          checkPermission: check,
           onRequest: onRequest,
         ),
       ),
@@ -139,9 +140,13 @@ class _SettingsScreenState extends State<SettingsScreen>
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
                 title: const Text('앱 사용 시간 감시'),
-                subtitle: const Text('켜져 있을 때만 백그라운드에서 사용 시간을 확인해요.'),
+                subtitle: Text(
+                  settings.trackingError ?? '켜져 있을 때만 백그라운드에서 사용 시간을 확인해요.',
+                ),
                 value: settings.usageTrackingEnabled,
-                onChanged: settings.setUsageTrackingEnabled,
+                onChanged: settings.trackingBusy
+                    ? null
+                    : settings.setUsageTrackingEnabled,
               ),
             ],
           ),
@@ -250,12 +255,21 @@ class _SettingsScreenState extends State<SettingsScreen>
   }
 
   void _openPrivacyPolicy(BuildContext context) {
-    const privacyUrl = 'https://example.com/privacy';
+    const privacyText =
+        '앱 사용 시간, 제한 설정, 타이머 기록과 선택한 펫 사진은 이 기기의 앱 저장소에 보관돼요. '
+        '사용 기록과 사진을 전송하는 자체 서버는 없어요. 앱 데이터를 삭제하거나 앱을 제거하면 로컬 기록이 삭제돼요. '
+        '광고는 기본적으로 꺼져 있어요. 권한은 Android 설정에서 언제든 해제할 수 있어요.';
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('개인정보 처리방침'),
-        content: const SelectableText(privacyUrl),
+        content: SingleChildScrollView(
+          child: Text(
+            adsEnabled
+                ? '$privacyText\n이 빌드는 광고가 활성화되어 Google AdMob SDK가 광고 요청 정보를 처리해요.'
+                : privacyText,
+          ),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),

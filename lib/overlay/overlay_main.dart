@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_overlay_window/flutter_overlay_window.dart';
 
 import '../core/constants.dart';
+import '../data/repositories/pet_repository.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 // 반드시 @pragma — overlay isolate 진입점
 @pragma('vm:entry-point')
@@ -22,18 +24,43 @@ class _OverlayApp extends StatefulWidget {
 class _OverlayAppState extends State<_OverlayApp> {
   String? _imagePath;
   Timer? _autoCloseTimer;
+  StreamSubscription<dynamic>? _subscription;
+  bool _receivedData = false;
 
   @override
   void initState() {
     super.initState();
-    FlutterOverlayWindow.overlayListener.listen(_onData);
+    _subscription = FlutterOverlayWindow.overlayListener.listen(_onData);
+    _autoCloseTimer = Timer(const Duration(seconds: 30), _close);
+    _loadFallback();
+  }
+
+  Future<void> _loadFallback() async {
+    // Native service startup can race the first shareData call.
+    try {
+      final pet = await PetRepository().getActive();
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.reload();
+      if (!mounted || _receivedData) return;
+      _onData({
+        OverlayDataKeys.petImagePath: pet?.imagePath,
+        OverlayDataKeys.displaySeconds:
+            prefs.getInt(PrefKeys.overlayDurationSeconds) ?? 5,
+      });
+    } catch (_) {
+      /* The 30-second watchdog still closes the overlay. */
+    }
   }
 
   void _onData(dynamic data) {
-    if (data is! Map) return;
+    if (!mounted || data is! Map) return;
+    _receivedData = true;
     final map = Map<String, dynamic>.from(data);
     final path = map[OverlayDataKeys.petImagePath] as String?;
-    final seconds = (map[OverlayDataKeys.displaySeconds] as int?) ?? 5;
+    final seconds = ((map[OverlayDataKeys.displaySeconds] as int?) ?? 5).clamp(
+      3,
+      30,
+    );
 
     setState(() => _imagePath = path);
 
@@ -46,6 +73,7 @@ class _OverlayAppState extends State<_OverlayApp> {
   @override
   void dispose() {
     _autoCloseTimer?.cancel();
+    _subscription?.cancel();
     super.dispose();
   }
 
@@ -56,44 +84,55 @@ class _OverlayAppState extends State<_OverlayApp> {
       debugShowCheckedModeBanner: false,
       home: Scaffold(
         backgroundColor: Colors.transparent,
-        body: GestureDetector(
-          onTap: _close,
-          child: Center(
-            child: Container(
-              width: 220,
-              height: 220,
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.92),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Colors.black26,
-                    blurRadius: 16,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (_imagePath != null && File(_imagePath!).existsSync())
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Image.file(
-                        File(_imagePath!),
-                        width: 150,
-                        height: 150,
-                        fit: BoxFit.cover,
+        body: Semantics(
+          button: true,
+          label: '펫 알림 닫기',
+          child: GestureDetector(
+            onTap: _close,
+            child: Center(
+              child: Container(
+                width: 220,
+                height: 220,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Colors.black26,
+                      blurRadius: 16,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    if (_imagePath != null && File(_imagePath!).existsSync())
+                      ClipRRect(
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.file(
+                          File(_imagePath!),
+                          width: 150,
+                          height: 150,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    else
+                      const Icon(
+                        Icons.pets,
+                        size: 80,
+                        color: Colors.pinkAccent,
                       ),
-                    )
-                  else
-                    const Icon(Icons.pets, size: 80, color: Colors.pinkAccent),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '여기봐용! 👀',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
-                ],
+                    const SizedBox(height: 8),
+                    const Text(
+                      '여기봐용! 👀',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

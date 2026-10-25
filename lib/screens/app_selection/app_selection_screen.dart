@@ -1,4 +1,4 @@
-import 'package:device_apps/device_apps.dart';
+import '../../services/installed_apps_service.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
@@ -15,9 +15,10 @@ class AppSelectionScreen extends StatefulWidget {
 }
 
 class _AppSelectionScreenState extends State<AppSelectionScreen> {
-  List<Application> _installedApps = [];
+  List<InstalledApp> _installedApps = [];
   bool _loading = true;
   String _search = '';
+  String? _error;
 
   @override
   void initState() {
@@ -26,29 +27,40 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
   }
 
   Future<void> _loadInstalledApps() async {
-    final apps = await DeviceApps.getInstalledApplications(
-      includeAppIcons: true,
-      includeSystemApps: false,
-      onlyAppsWithLaunchIntent: true,
-    );
-
-    final filtered =
-        apps
-            .where((a) => !UsageTrackingService.isSystemPackage(a.packageName))
-            .toList()
-          ..sort(
-            (a, b) =>
-                a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
-          );
-
-    if (!mounted) return;
     setState(() {
-      _installedApps = filtered;
-      _loading = false;
+      _loading = true;
+      _error = null;
     });
+    try {
+      final apps = await InstalledAppsService.getInstalledApplications();
+
+      final filtered =
+          apps
+              .where(
+                (a) => !UsageTrackingService.isSystemPackage(a.packageName),
+              )
+              .toList()
+            ..sort(
+              (a, b) =>
+                  a.appName.toLowerCase().compareTo(b.appName.toLowerCase()),
+            );
+
+      if (!mounted) return;
+      setState(() {
+        _installedApps = filtered;
+        _loading = false;
+      });
+    } catch (_) {
+      if (mounted) {
+        setState(() {
+          _loading = false;
+          _error = '앱 목록을 불러오지 못했어요.';
+        });
+      }
+    }
   }
 
-  List<Application> get _filteredApps {
+  List<InstalledApp> get _filteredApps {
     final q = _search.trim().toLowerCase();
     if (q.isEmpty) return _installedApps;
     return _installedApps
@@ -91,6 +103,19 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
       ),
       body: _loading
           ? const Center(child: CircularProgressIndicator())
+          : _error != null
+          ? Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(_error!),
+                  TextButton(
+                    onPressed: _loadInstalledApps,
+                    child: const Text('다시 시도'),
+                  ),
+                ],
+              ),
+            )
           : _filteredApps.isEmpty
           ? const _EmptySearchState()
           : ListView.separated(
@@ -117,7 +142,7 @@ class _AppSelectionScreenState extends State<AppSelectionScreen> {
 
   Future<void> _openLimitSheet(
     BuildContext context,
-    Application app,
+    InstalledApp app,
     MonitoredAppModel? existing,
     UsageProvider provider,
   ) async {
@@ -166,7 +191,7 @@ class _SummaryStrip extends StatelessWidget {
       child: Text(
         selectedCount == 0
             ? '앱을 누르면 하루 제한 시간을 바로 정할 수 있어요.'
-            : '$selectedCount개 앱을 지켜보는 중이에요.',
+            : '$selectedCount개 앱의 제한을 설정했어요. 홈에서 감시를 켜주세요.',
         style: TextStyle(
           color: cs.onPrimaryContainer,
           fontWeight: FontWeight.w700,
@@ -185,7 +210,7 @@ class _AppLimitCard extends StatelessWidget {
     required this.onRemove,
   });
 
-  final Application app;
+  final InstalledApp app;
   final MonitoredAppModel? monitored;
   final int usedSeconds;
   final VoidCallback onTap;
@@ -279,15 +304,15 @@ class _AppLimitCard extends StatelessWidget {
 class _AppIcon extends StatelessWidget {
   const _AppIcon({required this.app});
 
-  final Application app;
+  final InstalledApp app;
 
   @override
   Widget build(BuildContext context) {
-    if (app is ApplicationWithIcon) {
+    if (app.icon != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(12),
         child: Image.memory(
-          (app as ApplicationWithIcon).icon,
+          app.icon!,
           width: 48,
           height: 48,
           gaplessPlayback: true,
