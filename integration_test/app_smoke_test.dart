@@ -33,6 +33,12 @@ void main() {
   testWidgets('launch, native app list, SQLite timer and pet overlay', (
     tester,
   ) async {
+    final originalErrorHandler = FlutterError.onError;
+    FlutterError.onError = (details) {
+      debugPrint(details.toString());
+      originalErrorHandler?.call(details);
+    };
+    addTearDown(() => FlutterError.onError = originalErrorHandler);
     await app.main();
     await waitFor(
       tester,
