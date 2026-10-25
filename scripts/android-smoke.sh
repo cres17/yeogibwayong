@@ -14,4 +14,16 @@ set -e
 cat docs/verification/runtime/integration.log
 adb logcat -d > docs/verification/runtime/logcat.txt
 adb exec-out screencap -p > docs/verification/runtime/screen.png
-exit "$smoke_status"
+if [ "$smoke_status" -ne 0 ]; then exit "$smoke_status"; fi
+# Also launch the optimized app: integration tests exercise a debug build.
+adb install -r build/app/outputs/flutter-apk/app-x86_64-release.apk
+adb shell am force-stop com.cres.yeogibwayong
+adb logcat -c
+adb shell am start -W -n com.cres.yeogibwayong/.MainActivity
+sleep 8
+adb shell pidof com.cres.yeogibwayong > docs/verification/runtime/release-pid.txt
+adb logcat -d > docs/verification/runtime/release-logcat.txt
+adb exec-out screencap -p > docs/verification/runtime/release-home.png
+if grep -E 'FATAL EXCEPTION|Startup failed:|Unhandled Exception' docs/verification/runtime/release-logcat.txt; then
+  exit 1
+fi

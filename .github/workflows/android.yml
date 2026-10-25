@@ -28,10 +28,11 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build apk --debug
+      - run: flutter build apk --release --split-per-abi
       - uses: actions/upload-artifact@v4
         with:
-          name: yeogibwayong-debug-apk
-          path: build/app/outputs/flutter-apk/app-debug.apk
+          name: yeogibwayong-test-apks
+          path: build/app/outputs/flutter-apk/*.apk
       - name: Enable KVM
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
