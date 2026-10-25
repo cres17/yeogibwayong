@@ -1,18 +1,18 @@
 <h1 align="center">여기봐용</h1>
 
-<div align="center">
-
-![Flutter](https://img.shields.io/badge/Flutter-02569B?style=flat&logoColor=white&logo=flutter)
-![Provider](https://img.shields.io/badge/Provider-355A85?style=flat&logoColor=white)
-![SQLite](https://img.shields.io/badge/SQLite-003B57?style=flat&logoColor=white&logo=sqlite)
-![Kotlin](https://img.shields.io/badge/Kotlin-7F52FF?style=flat&logoColor=white&logo=kotlin)
-![Android](https://img.shields.io/badge/Android-3DDC84?style=flat&logoColor=black&logo=android)
-![UsageStats API](https://img.shields.io/badge/UsageStats%20API-3DDC84?style=flat&logoColor=black)
-![flutter_background_service](https://img.shields.io/badge/flutter__background__service-2F6B4F?style=flat&logoColor=white)
-![WorkManager](https://img.shields.io/badge/WorkManager-4D5868?style=flat&logoColor=white)
-![flutter_overlay_window](https://img.shields.io/badge/flutter__overlay__window-8A6420?style=flat&logoColor=white)
-
-</div>
+<p align="center">
+  <img src="https://img.shields.io/badge/Flutter-02569B?style=flat&amp;logoColor=white&amp;logo=flutter" alt="Flutter" height="20">
+  <img src="https://img.shields.io/badge/Provider-355A85?style=flat&amp;logoColor=white" alt="Provider" height="20">
+  <img src="https://img.shields.io/badge/SQLite-003B57?style=flat&amp;logoColor=white&amp;logo=sqlite" alt="SQLite" height="20">
+  <br>
+  <img src="https://img.shields.io/badge/Kotlin-7F52FF?style=flat&amp;logoColor=white&amp;logo=kotlin" alt="Kotlin" height="20">
+  <img src="https://img.shields.io/badge/Android-3DDC84?style=flat&amp;logoColor=black&amp;logo=android" alt="Android" height="20">
+  <img src="https://img.shields.io/badge/UsageStats%20API-3DDC84?style=flat&amp;logoColor=black" alt="UsageStats API" height="20">
+  <br>
+  <img src="https://img.shields.io/badge/flutter__background__service-2F6B4F?style=flat&amp;logoColor=white" alt="flutter_background_service" height="20">
+  <img src="https://img.shields.io/badge/WorkManager-4D5868?style=flat&amp;logoColor=white" alt="WorkManager" height="20">
+  <img src="https://img.shields.io/badge/flutter__overlay__window-8A6420?style=flat&amp;logoColor=white" alt="flutter_overlay_window" height="20">
+</p>
 
 정해 둔 앱의 사용 시간을 넘기면 반려동물 사진이 화면 위에 나타나는 Android 앱입니다. 앱을 강제로 차단하는 대신 잠시 시선을 돌릴 수 있도록 만들었습니다. 사용 통계, 집중 타이머, 반려동물 등록 기능을 제공하며 한국어와 영어를 지원합니다.
 
